@@ -1,0 +1,3 @@
+- an object can leak into the tp->ex variable and not go away
+    which might matter.
+- you can have infinite loops in range

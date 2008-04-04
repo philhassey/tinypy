@@ -1,0 +1,207 @@
+********************************************************************************
+This file contains my notes.  Don't rely on it for anything useful.  It might
+have some cool links it though :)
+********************************************************************************
+originally:
+./tinypy julia.py
+320
+time ./tinypy py2c.py dump2vm.py dump2vm.tpc -nopos
+2.80
+
+after updated to tp_fnc:
+./tinypy julia.py
+315
+time ./tinypy py2c.py dump2vm.py dump2vm.tpc -nopos
+5.24
+
+after fixing hash function:
+./tinypy julia.py
+325
+time ./tinypy py2c.py dump2vm.py dump2vm.tpc -nopos
+2.71
+
+after updating string handling:
+./tinypy julia.py
+325
+time ./tinypy py2c.py dump2vm.py dump2vm.tpc -nopos
+2.71
+
+after begining to use the tgc2 data:
+./tinypy julia.py
+320
+time ./tinypy py2c.py dump2vm.py dump2vm.tpc -nopos
+2.20
+
+after switching tgc2 to use lists and no dicts:
+./tinypy julia.py
+312
+time ./tinypy py2c.py dump2vm.py dump2vm.tpc -nopos
+1.82
+
+after updating the tp_step to use a while loop:
+./tinypy julia.py
+250
+time ./tinypy py2c.py dump2vm.py dump2vm.tpc -nopos
+1.75
+
+after hacking tp_get to use chars for string[n]
+./tinypy julia.py
+240
+time ./tinypy py2c.py dump2vm.py dump2vm.tpc -nopos
+1.63
+
+********************************************************************************
+http://dmalloc.com/ 
+http://dmalloc.com/docs/latest/online/dmalloc_6.html#SEC8
+valgrind
+http://www.uclibc.org/FAQ.html
+
+www.lua.org
+www.nekovm.org
+
+handy functions for watching memory get spent ..
+
+// void *tp_malloc(int v) {
+//     static int n = 0;
+//     n += 1;
+//     fprintf(stderr,"%d %d\n",v,n);
+//     return GC_MALLOC(v);
+// }
+// void *tp_realloc(void *a, int v) {
+//     static int n = 0;
+//     n += 1;
+//     fprintf(stderr,"%d %d\n",v,n);
+//     return GC_REALLOC(a,v);
+// }
+
+
+
+Likely, how stuff should be broken up:
+
+8k - parsing 
+8k - generating bytecode
+
+16k - tinypy native types (numbers, strings, lists, dicts, functions, etc)
+8k - other builtin functins (print, sort, etc)
+
+8k - the VM
+8k - incremental garbage collection (libgc replacement)
+
+8k - script to manage generating wrappers and maybe pyplus?
+
+  153   513  3968 pylang.py     4k
+  380   797  9933 dumbparse.py  12k - extra room for syntax asserts
+  590  1377 16270 dump2vm.py    16k
+                                ===
+                                32k
+
+  157   329  3112 tp.h          2k - clean it up
+  502  1572 14637 tp.c          16k - add in fncs 
+   87   247  2341 dict.c        4k - room for adding lookup3
+  110   273  2715 list.c        2k - clean it up
+  293   798  8416 vm.c          8k - basically done
+                                ===
+                                32k
+
+import, list.pop, *.len, dict.items, list.extend
+list.find, list.index, (list.insert?) isinstance? or alternative..
+xrange, string.format, print_callstack
+open().read() open.write() vs load() save() exists() mtime()
+argv access, len, del->use pop on dicts = pop(r,2)
+ 
+==========================================================
+
+params:
+
+VM_PARAMS (a) - create new object
+VM_SET(a,b,c) - set a value in it, None = just a param, *=args, **=nargs
+VM_DGET(a,b,c) - get a value (with optional default), name, None, *, ** as keys
+VM_DEL (a) - delete the params object -- throw error if stuff is left in it
+
+blah(a,b,c=d,*e,**f)
+
+blah(a,b,e[0],e[1],merge(f,{'c':'d'}))
+
+on the VM side:
+R0,R1,R2,R3 ...
+PARAMS(R,Start,Len) = for all unnamed params # basically same as list init
+SET(R,k,v) = for all named and [] and {} params
+
+FNC:
+R0 = Null
+R1 = params
+R2 = "globals"
+R3 = "self"
+R4 = "x"
+R5 = "y"
+R6 = "w"
+R7 = "h"
+R8 = "[]"
+R9 = "{}"
+R10 = 23
+GET(10,1,2) # globals, no default
+DSET(1,4,10) # set default = 23
+GET(11,1,4) # x default 23
+-or-
+R5 = "w"
+R6 = 234
+DGET(dest,params,key) - grabs R(key+1) for default
+
+
+on FFI side:
+
+tp_obj fnc(tp_obj params) {
+    P_BEGIN;
+    float x = P_FLOAT("x");
+    float y = P_FLOAT("y");
+    float w = P_FLOAT("w");
+    float h = P_FLOAT("h");
+    tp_obj args = P_ARGS();
+    tp_obj nargs = P_NARGS();
+    P_END;
+}
+
+tp_obj fnc(int argc, tp_obj argv[]) {
+    P_CHECK(4);
+    float x = P_FLOAT(argv[0]);
+    float y = P_FLOAT(argv[1]);
+    float w = P_FLOAT(argv[2]);
+    float h = P_FLOAT(argv[3]);
+}
+
+in stack, un packed ...
+8, None, 1, None, 2, None, 3, "**", {}
+
+on fnc side ...
+won't work, because the items could vary.
+
+==========================================================
+http://burtleburtle.net/bob/c/lookup3.c
+a good hash function
+
+// realloc
+// http://lland.svn.sourceforge.net/viewvc/lland/
+http://www.valgrind.org/docs/manual/quick-start.html#quick-start.mcrun
+http://en.wikipedia.org/wiki/Dmalloc
+
+http://javascript.crockford.com/tdop/tdop.html
+http://www.cs.inf.ethz.ch/~wirth/books/CompilerConstruction/
+
+tp_obj fnc(int argc, tp_obj *argv[]) {
+
+to test function calling speed ...
+===================================================================
+this is a nice cleanup function for at the end of the parse phase ..
+
+def do_filter(r):
+    for k in 'bp','lbp','nud','led','to':
+        if k in r: del r[k]
+    if 'items' in r:
+        for t in r['items']: do_filter(t)
+
+/////////////////////////////////////////////////////////////////////
+if you want signal handling
+
+void tp_signal(int v) {
+    tp_raise(,"%s",strsignal(v));
+}
