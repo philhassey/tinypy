@@ -150,14 +150,19 @@ def build_tp():
     
 
 def bootstrap():
+    compat = '-compat' in sys.argv
     mods = MODS[:]; mods.append('tests')
     do_cmd("gcc -Wall -g vmmain.c $FLAGS -lm -o vm")
+    if compat: do_cmd("gcc -std=c89 -Wall -g vmmain.c $FLAGS -lm -o vm-c89")
+    if compat: do_cmd("g++ -Wall -g vmmain.c $FLAGS -lm -o vm-cpp")
     do_cmd('python tests.py $SYS')
     for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
     do_cmd(VM+'tests.tpc $SYS')
     for mod in mods: do_cmd(VM+'py2bc.tpc %s.py %s.tpc'%(mod,mod))
     build_bc()
     do_cmd("gcc -Wall -g tpmain.c $FLAGS -lm -o tinypy")
+    if compat: do_cmd("gcc -std=c89 -Wall -g tpmain.c $FLAGS -lm -o tinypy-c89")
+    if compat: do_cmd("g++ -Wall -g tpmain.c $FLAGS -lm -o tinypy-cpp")
     #second pass - builts optimized binaries and stuff
     do_cmd(TINYPY+'tests.py $SYS')
     for mod in mods: do_cmd(TINYPY+'py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
