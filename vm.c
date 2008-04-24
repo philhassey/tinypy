@@ -308,20 +308,21 @@ tp_obj tp_import_(TP) {
     return r;
 }
 
-#define TP_IB(a,b) tp_set(tp,ctx,tp_string(a),tp_fnc(tp,b))
-
-tp_obj tp_builtins(TP) {
-    tp_obj ctx = tp->builtins;
-    TP_IB("print",tp_print); TP_IB("range",tp_range); TP_IB("min",tp_min);
-    TP_IB("max",tp_max); TP_IB("bind",tp_bind); TP_IB("copy",tp_copy);
-    TP_IB("import",tp_import_); TP_IB("len",tp_len_); TP_IB("assert",tp_assert);
-    TP_IB("str",tp_str2); TP_IB("float",tp_float); TP_IB("system",tp_system);
-    TP_IB("istype",tp_istype); TP_IB("chr",tp_chr); TP_IB("save",tp_save);
-    TP_IB("load",tp_load); TP_IB("fpack",tp_fpack); TP_IB("abs",tp_abs);
-    TP_IB("int",tp_int); TP_IB("exec",tp_exec_); TP_IB("exists",tp_exists);
-    TP_IB("mtime",tp_mtime); TP_IB("number",tp_float); TP_IB("round",tp_round);
-    TP_IB("ord",tp_ord); TP_IB("merge",tp_merge);
-    return ctx;
+void tp_builtins(TP) {
+    struct {char *s;void *f;} b[] = {
+    {"print",tp_print}, {"range",tp_range}, {"min",tp_min},
+    {"max",tp_max}, {"bind",tp_bind}, {"copy",tp_copy},
+    {"import",tp_import_}, {"len",tp_len_}, {"assert",tp_assert},
+    {"str",tp_str2}, {"float",tp_float}, {"system",tp_system},
+    {"istype",tp_istype}, {"chr",tp_chr}, {"save",tp_save},
+    {"load",tp_load}, {"fpack",tp_fpack}, {"abs",tp_abs},
+    {"int",tp_int}, {"exec",tp_exec_}, {"exists",tp_exists},
+    {"mtime",tp_mtime}, {"number",tp_float}, {"round",tp_round},
+    {"ord",tp_ord}, {"merge",tp_merge}, {0,0},
+    };
+    int i; for(i=0; b[i].s; i++) {
+        tp_set(tp,tp->builtins,tp_string(b[i].s),tp_fnc(tp,b[i].f));
+    }
 }
 
 
