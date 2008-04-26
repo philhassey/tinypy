@@ -59,12 +59,19 @@ tp_obj tp_assert(TP) {
 }
 
 tp_obj tp_range(TP) {
-    int a = TP_NUM();
-    int b = TP_NUM();
-    int c = TP_DEFAULT(tp_number(1)).number.val;
+    int a,b,c,i;
     tp_obj r = tp_list(tp);
-    int i;
-    for (i=a; i!=b; i+=c) { _tp_list_append(tp,r.list.val,tp_number(i)); }
+    switch (__params.list.val->len) {
+        case 1: a = 0; b = TP_NUM(); c = 1; break;
+        case 2:
+        case 3: a = TP_NUM(); b = TP_NUM(); c = TP_DEFAULT(tp_number(1)).number.val; break;
+        default: return r;
+    }
+    if (c != 0) {
+        for (i=a; (c>0) ? i<b : i>b; i+=c) {
+            _tp_list_append(tp,r.list.val,tp_number(i));
+        }
+    }
     return r;
 }
 

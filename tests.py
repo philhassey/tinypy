@@ -189,6 +189,51 @@ def t_render(ss,ex,exact=True):
     if exact: assert(res == ex)
     else: assert(ex in res)
 
+
+def test_range():
+    t_render("""print(str(range(4))[:5])""","<list")
+    t_render("""print(len(range(4)))""","4")
+    t_render("""print(range(4)[0])""","0")
+    t_render("""print(range(4)[1])""","1")
+    t_render("""print(range(4)[-1])""","3")
+
+    t_render("""print(str(range(-4))[:5])""","<list")
+    t_render("""print(len(range(-4)))""","0")
+
+    t_render("""print(str(range(0,5,3))[:5])""","<list")
+    t_render("""print(len(range(0,5,3)))""","2")
+    t_render("""print(range(0,5,3)[0])""","0")
+    t_render("""print(range(0,5,3)[1])""","3")
+    t_render("""print(range(0,5,3)[-1])""","3")
+
+    t_render("""print(str(range(5,0,-3))[:5])""","<list")
+    t_render("""print(len(range(5,0,-3)))""","2")
+    t_render("""print(range(5,0,-3)[0])""","5")
+    t_render("""print(range(5,0,-3)[1])""","2")
+    t_render("""print(range(5,0,-3)[-1])""","2")
+
+    t_render("""print(str(range(-8,-4))[:5])""","<list")
+    t_render("""print(len(range(-8,-4)))""","4")
+    t_render("""print(range(-8,-4)[0])""","-8")
+    t_render("""print(range(-8,-4)[1])""","-7")
+    t_render("""print(range(-8,-4)[-1])""","-5")
+
+    t_render("""print(str(range(-4,-8,-1))[:5])""","<list")
+    t_render("""print(len(range(-4,-8,-1)))""","4")
+    t_render("""print(range(-4,-8,-1)[0])""","-4")
+    t_render("""print(range(-4,-8,-1)[1])""","-5")
+    t_render("""print(range(-4,-8,-1)[-1])""","-7")
+
+    t_render("""print(str(range(-4,-8))[:5])""","<list")
+    t_render("""print(len(range(-4,-8)))""","0")
+
+    t_render("""print(str(range(-8,-4,-1))[:5])""","<list")
+    t_render("""print(len(range(-8,-4,-1)))""","0")
+
+    t_render("""print(str(range(0,4,0))[:5])""","<list")
+    t_render("""print(len(range(0,4,0)))""","0")
+
+    
 if __name__ == '__main__':
     t_render('print("hello world")',"hello world")
     t_render('print(234)',"234")
@@ -628,6 +673,9 @@ test()
     #t_render("print(float(str(4294967296))==float('4294967296'))","1")
     t_render("print(2**3)","8")
     #t_render("x = 'OK',\nprint(x[0])","OK")
+
+    test_range()
+
 
 ################################################################################
 
