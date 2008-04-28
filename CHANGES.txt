@@ -1,0 +1,2 @@
+* applied patch by Dean Hall to fix several range() bugs
+* applied patch by Krzysztof Kowalczyk to add VS 2005, 2008 compatibility.
