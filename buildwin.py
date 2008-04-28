@@ -1,31 +1,53 @@
-import os
-import sys
-import struct
+import os, sys, struct
+
+# How to compile on windows with Visual Studio:
+# Call the batch script that sets environement variables for Visual Studio and
+# then run this script.
+# For VS 2005 the script is:
+# "C:\Program Files\Microsoft Visual Studio 8\Common7\Tools\vsvars32.bat"
+# For VS 2008: "C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
+# Doesn't compile with vc6 (no variadic macros)
 
 ARGV = sys.argv
 
-RM = 'rm -f '
-VM = './vm '
-TINYPY = './tinypy '
-if '-mingw32' in ARGV:
-    RM = 'del '
-    VM = 'vm '
-    TINYPY = 'tinypy '
+def number(v):
+    if type(v) is str and v[0:2] == '0x':
+        v = int(v[2:],16)
+    return float(v)
+
+def istype(v,t):
+    if t == 'string': return isinstance(v,str)
+    elif t == 'list': return (isinstance(v,list) or isinstance(v,tuple))
+    elif t == 'dict': return isinstance(v,dict)
+    elif t == 'number': return (isinstance(v,float) or isinstance(v,int))
+    raise '?'
+
+def boot_init():
+    global FTYPE 
+    f = open('tp.h','r').read()
+    FTYPE = 'f'
+    if 'double tp_num' in f: FTYPE = 'd'
+
+boot_init()
+
+def fpack(v):
+    return struct.pack(FTYPE,v)
+
+def system(cmd):
+    return os.system(cmd)
+
+def load(fname):
+    f = open(fname,'rb')
+    r = f.read()
+    f.close()
+    return r
+
+def save(fname,v):
+    f = open(fname,'wb')
+    f.write(v)
+    f.close()
 
 def do_cmd(cmd):
-    FLAGS = ''
-    SDL = '`sdl-config --cflags --libs`'
-    SYS = '-linux'
-    if '-mingw32' in sys.argv:
-        #-mwindows -mno-cygwin 
-        FLAGS = '-mwindows -lmingw32'
-        #SDL = '-lSDLmain -Ic:/packages/sdl-devel/include -Lc:/packages/sdl-devel/lib -lSDL -Lc:/packages/sdl-devel/lib -lSDL'
-        SDL = '-Ic:/packages/sdl-devel/include -Lc:/packages/sdl-devel/lib '+\
-            '-lSDLmain -lSDL'
-        SYS = '-mingw32'
-    cmd = cmd.replace('$FLAGS',FLAGS)
-    cmd = cmd.replace('$SYS',SYS)
-    cmd = cmd.replace('$SDL',SDL)
     print cmd
     r = os.system(cmd)
     if r:
@@ -62,7 +84,7 @@ def build_bc(opt=False):
     f = open('bc.c','wb')
     f.write('\n'.join(out))
     f.close()
-    
+
 def build_tp():
     out = []
     out.append("/*")
@@ -110,35 +132,24 @@ def build_tp():
     f = open('tinypy.c','w')
     f.write('\n'.join(out))
     f.close()
-    
-    
 
 def bootstrap():
-    compat = '-compat' in sys.argv
     mods = MODS[:]; mods.append('tests')
-    do_cmd("gcc -Wall -g vmmain.c $FLAGS -lm -o vm")
-    if compat: do_cmd("gcc -std=c89 -Wall -g vmmain.c $FLAGS -lm -o vm-c89")
-    if compat: do_cmd("g++ -Wall -g vmmain.c $FLAGS -lm -o vm-cpp")
-    do_cmd('python tests.py $SYS')
+    do_cmd('cl vmmain.c /D "inline=" /Od /Zi /Fdvm.pdb /Fmvm.map /Fevm.exe')
+    do_cmd('python tests.py -win')
     for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
-    do_cmd(VM+'tests.tpc $SYS')
-    for mod in mods: do_cmd(VM+'py2bc.tpc %s.py %s.tpc'%(mod,mod))
+    do_cmd('vm.exe tests.tpc -win')
+    for mod in mods: do_cmd('vm.exe py2bc.tpc %s.py %s.tpc'%(mod,mod))
     build_bc()
-    do_cmd("gcc -Wall -g tpmain.c $FLAGS -lm -o tinypy")
-    if compat: do_cmd("gcc -std=c89 -Wall -g tpmain.c $FLAGS -lm -o tinypy-c89")
-    if compat: do_cmd("g++ -Wall -g tpmain.c $FLAGS -lm -o tinypy-cpp")
+    do_cmd('cl /Od tpmain.c /D "inline=" /Zi /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe')
     #second pass - builts optimized binaries and stuff
-    do_cmd(TINYPY+'tests.py $SYS')
-    for mod in mods: do_cmd(TINYPY+'py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
+    do_cmd('tinypy.exe tests.py -win')
+    for mod in mods: do_cmd('tinypy.exe py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
     build_bc(True)
-    do_cmd("gcc -Wall -O2 tpmain.c $FLAGS -lm -o tinypy")
-    do_cmd(TINYPY+'tests.py $SYS')
-    print("# OK - we'll try -O3 for extra speed ...")
-    do_cmd("gcc -Wall -O3 tpmain.c $FLAGS -lm -o tinypy")
-    do_cmd(TINYPY+'tests.py $SYS')
-    print("# OK")
-    build_tp()
-    do_cmd("gcc -Wall -O3 tinypy-sdl.c tinypy.c $FLAGS $SDL -lm -o tinypy-sdl")
+    do_cmd('cl /Os vmmain.c /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /Fdvm.pdb /Fmvm.map /Fevm.exe /link /opt:ref /opt:icf')
+    do_cmd('cl /Os tpmain.c   /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe /link /opt:ref /opt:icf')
+    do_cmd("tinypy.exe tests.py -win")
+    do_cmd("dir *.exe")
 
 if __name__ == '__main__':
     bootstrap()

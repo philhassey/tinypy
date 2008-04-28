@@ -205,3 +205,41 @@ if you want signal handling
 void tp_signal(int v) {
     tp_raise(,"%s",strsignal(v));
 }
+
+***********************************************************************
+from BUGS.txt:
+- an object can leak into the tp->ex variable and not go away
+    which might matter.
+- you can have infinite loops in range
+
+***********************************************************************
+from TODO.txt
+Probably not going to happen:
+    - remove tp_ptr to globals, have it just be a ptr to the dict
+    - remove bind, and have dump2vm transform x.y(z) => y(x,z)
+        this will also make __call__ do this, assuming obj has a __call__ key
+        x.y(z) -> y.__call__(y,x,z) - a replacement for bind
+        x(z) -> x.__call__(x,z) - good for creating new objects
+        however, stuff like
+        x = y.z; x() -- would no longer work as in python
+        - however this whole idea isn't so great because if you have a class
+            Y(X) and you want to call X.blah(self,a,b) - it won't work
+            you'd have to do X['blah'](self,a,b) to get it, sort of "lua style"
+        - add in meta tables, so that inheritance is a no-op meta(X,Y)
+    ? Add-on modules:
+        - use UTF8 unicode for strings length and splices
+        - format functions
+        - math, random, pygame
+    ? - make it "secure" a bit at a time - whatever that means
+    ? - bool function ?? - what for when we already have 0s and 1s?!
+    ? - have all constant strings, numbers, and tuples be cached
+    ? - auto gen struct wrappers
+    ? - have "jit" happen when a number is used in an expression
+        that number will taint the whole expression to use fast math
+        add in float() support as a additional tainting mechanism
+        - or -
+        have an jit function that you can use to run a function
+        using jit
+        - or -
+        don't bother, write C code if you need it fast ;)
+

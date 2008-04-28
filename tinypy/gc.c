@@ -39,10 +39,13 @@ void tp_follow(TP,tp_obj v) {
 
 void tp_reset(TP) {
     int n;
+    _tp_list *tmp;
     for (n=0; n<tp->black->len; n++) {
         *tp->black->items[n].gci.data = 0;
     }
-    _tp_list *tmp = tp->white; tp->white = tp->black; tp->black = tmp;
+    tmp = tp->white; 
+    tp->white = tp->black; 
+    tp->black = tmp;
 }
 
 void tp_gc_init(TP) {
@@ -101,8 +104,11 @@ void tp_collect(TP) {
 }
 
 void _tp_gcinc(TP) {
-    if (!tp->grey->len) { return; }
-    tp_obj v = _tp_list_pop(tp,tp->grey,tp->grey->len-1,"_tp_gcinc");
+    tp_obj v;
+    if (!tp->grey->len) { 
+        return; 
+    }
+    v = _tp_list_pop(tp,tp->grey,tp->grey->len-1,"_tp_gcinc");
     tp_follow(tp,v);
     _tp_list_appendx(tp,tp->black,v);
 }

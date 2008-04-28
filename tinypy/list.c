@@ -66,11 +66,13 @@ _tp_list *_tp_list_new(void) {
 }
 
 tp_obj _tp_list_copy(TP, tp_obj rr) {
+    tp_obj val = {TP_LIST};
     _tp_list *o = rr.list.val;
     _tp_list *r = _tp_list_new(); *r = *o;
     r->items = tp_malloc(sizeof(tp_obj)*o->alloc);
     memcpy(r->items,o->items,sizeof(tp_obj)*o->alloc);
-    return tp_track(tp,(tp_obj)(tp_list_){TP_LIST,r});
+    val.list.val = r;
+    return tp_track(tp,val);
 }
 
 tp_obj tp_append(TP) {
@@ -104,27 +106,27 @@ tp_obj tp_extend(TP) {
 }
 
 tp_obj tp_list(TP) {
-    tp_obj r = (tp_obj)(tp_list_){TP_LIST,_tp_list_new()};
-    return tp?tp_track(tp,r):r;
+    tp_obj r = {TP_LIST};
+    r.list.val = _tp_list_new();
+    return tp ? tp_track(tp,r) : r;
 }
 
 tp_obj tp_list_n(TP,int n,tp_obj *argv) {
+    int i; 
     tp_obj r = tp_list(tp); _tp_list_realloc(r.list.val,n);
-    int i; for (i=0; i<n; i++) { _tp_list_append(tp,r.list.val,argv[i]); }
+    for (i=0; i<n; i++) {
+        _tp_list_append(tp,r.list.val,argv[i]); 
+    }
     return r;
 }
 
 int _tp_sort_cmp(tp_obj *a,tp_obj *b) {
     return tp_cmp(0,*a,*b);
 }
+
 tp_obj tp_sort(TP) {
     tp_obj self = TP_OBJ();
     qsort(self.list.val->items, self.list.val->len, sizeof(tp_obj), (int(*)(const void*,const void*))_tp_sort_cmp);
     return None;
 }
-
-
-
-//
-
 

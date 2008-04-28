@@ -162,10 +162,11 @@ typedef struct _tp_data {
 } _tp_data;
 
 // NOTE: these are the few out of namespace items for convenience
-#define None ((tp_obj){TP_NONE})
 #define True tp_number(1)
 #define False tp_number(0)
 #define STR(v) ((tp_str(tp,(v))).string.val)
+
+extern tp_obj None;
 
 void tp_set(TP,tp_obj,tp_obj,tp_obj);
 tp_obj tp_get(TP,tp_obj,tp_obj);
@@ -177,7 +178,7 @@ tp_obj tp_printf(TP,char *fmt,...);
 tp_obj tp_track(TP,tp_obj);
 void tp_grey(TP,tp_obj);
 
-// __func__ __VA_ARGS__ __FILE__ __LINE__
+/* __func__ __VA_ARGS__ __FILE__ __LINE__ */
 #define tp_raise(r,fmt,...) { \
     _tp_raise(tp,tp_printf(tp,fmt,__VA_ARGS__)); \
     return r; \
@@ -202,11 +203,26 @@ inline static tp_obj tp_type(TP,int t,tp_obj v) {
 inline static int _tp_min(int a, int b) { return (a<b?a:b); }
 inline static int _tp_max(int a, int b) { return (a>b?a:b); }
 inline static int _tp_sign(tp_num v) { return (v<0?-1:(v>0?1:0)); }
-inline static tp_obj tp_number(tp_num v) { return (tp_obj)(tp_number_){TP_NUMBER,v}; }
-inline static tp_obj tp_string(char *v) { return (tp_obj)(tp_string_){TP_STRING,0,v,strlen(v)}; }
+
+inline static tp_obj tp_number(tp_num v) { 
+    tp_obj val = {TP_NUMBER};
+    val.number.val = v;
+    return val; 
+}
+
+inline static tp_obj tp_string(char *v) {
+    tp_obj val;
+    tp_string_ s = {TP_STRING, 0, v, 0};
+    s.len = strlen(v);
+    val.string = s;
+    return val; 
+}
+
 inline static tp_obj tp_string_n(char *v,int n) {
-    return (tp_obj)(tp_string_){TP_STRING,0,v,n};
+    tp_obj val;
+    tp_string_ s = {TP_STRING, 0,v,n};
+    val.string = s;
+    return val;
 }
 
 #endif
-//
