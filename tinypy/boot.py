@@ -3,6 +3,9 @@ def _boot_init():
     f = open('tp.h','r').read()
     FTYPE = 'f'
     if 'double tp_num' in f: FTYPE = 'd'
+    import sys
+    global ARGV
+    ARGV = sys.argv
 _boot_init()
 
 def number(v):

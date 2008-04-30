@@ -1,5 +1,5 @@
 if not (str(1.0) == "1"):
-    from build import *
+    from boot import *
 
 import tokenize,parse,encode
 
