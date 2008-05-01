@@ -5,6 +5,7 @@ VARS = {}
 TOPDIR = os.path.abspath(os.path.dirname(__file__))
 
 def main():
+    chksize()
     if len(sys.argv) < 2:
         print HELP
         return
@@ -40,7 +41,9 @@ Commands:
     install - install CPython module *
     
 Options:
-    n/a
+    jit - build contrib jit module *
+    pygame - build contrib pygame module *
+    re - build contrib re module *
     
 * vaporware
 """
@@ -74,21 +77,6 @@ def do_cmd(cmd):
     if r:
         print 'exit_status',r
         sys.exit(r)
-
-def chksize():
-    import mk64k
-    t1,t2 = 0,0
-    for fname in [
-        'tokenize.py','parse.py','encode.py','py2bc.py',
-        'tp.h','list.c','dict.c','misc.c','string.c','builtins.c',
-        'gc.c','ops.c','vm.c','tp.c','tpmain.c',
-        ]:
-        fname = os.path.join(os.path.dirname(__file__),'tinypy',fname)
-        f = open(fname,'r'); t1 += len(f.read()); f.close()
-        txt = mk64k.shrink(fname)
-        t2 += len(txt)
-    print "#",t1,t2,t2-65536
-    return t2
 
 MODS = ['tokenize','parse','encode','py2bc']
 
@@ -188,6 +176,97 @@ def build_gcc():
     print("# OK")
     build_tp()
     #do_cmd("gcc -Wall -O3 tinypy-sdl.c tinypy.c $FLAGS $SDL -lm -o tinypy-sdl")
+
+def build_vs():
+    # How to compile on windows with Visual Studio:
+    # Call the batch script that sets environement variables for Visual Studio and
+    # then run this script.
+    # For VS 2005 the script is:
+    # "C:\Program Files\Microsoft Visual Studio 8\Common7\Tools\vsvars32.bat"
+    # For VS 2008: "C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
+    # Doesn't compile with vc6 (no variadic macros)
+    mods = MODS[:]; mods.append('tests')
+    os.chdir(os.path.join(TOPDIR,'tinypy'))
+    do_cmd('cl vmmain.c /D "inline=" /Od /Zi /Fdvm.pdb /Fmvm.map /Fevm.exe')
+    do_cmd('python tests.py -win')
+    for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
+    do_cmd('vm.exe tests.tpc -win')
+    for mod in mods: do_cmd('vm.exe py2bc.tpc %s.py %s.tpc'%(mod,mod))
+    build_bc()
+    do_cmd('cl /Od tpmain.c /D "inline=" /Zi /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe')
+    #second pass - builts optimized binaries and stuff
+    do_cmd('tinypy.exe tests.py -win')
+    for mod in mods: do_cmd('tinypy.exe py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
+    build_bc(True)
+    do_cmd('cl /Os vmmain.c /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /Fdvm.pdb /Fmvm.map /Fevm.exe /link /opt:ref /opt:icf')
+    do_cmd('cl /Os tpmain.c   /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe /link /opt:ref /opt:icf')
+    do_cmd("tinypy.exe tests.py -win")
+    do_cmd("dir *.exe")
+    
+
+
+def shrink(fname):
+    f = open(fname,'r'); lines = f.readlines(); f.close()
+    out = []
+    fixes = [
+    'vm','gc','params','STR',
+    'int','float','return','free','delete','init',
+    'abs','round','system','pow','div','raise','hash','index','printf','main']
+    for line in lines:
+        #quit if we've already converted
+        if '\t' in line: return ''.join(lines)
+        
+        #change "    " into "\t" and remove blank lines
+        if len(line.strip()) == 0: continue
+        line = line.rstrip()
+        l1,l2 = len(line),len(line.lstrip())
+        line = "\t"*((l1-l2)/4)+line.lstrip()
+        
+        #remove comments
+        if '.c' in fname or '.h' in fname:
+            if line.strip()[:2] == '//': continue
+        if '.py' in fname:
+            if line.strip()[:1] == '#': continue
+        
+        #remove the "namespace penalty" from tinypy ...
+        for name in fixes:
+            line = line.replace('TP_'+name,'t'+name)
+            line = line.replace('tp_'+name,'t'+name)
+        line = line.replace('TP_','')
+        line = line.replace('tp_','')
+        
+        out.append(line)
+    return '\n'.join(out)+'\n'
+    
+def chksize():
+    t1,t2 = 0,0
+    for fname in [
+        'tokenize.py','parse.py','encode.py','py2bc.py',
+        'tp.h','list.c','dict.c','misc.c','string.c','builtins.c',
+        'gc.c','ops.c','vm.c','tp.c','tpmain.c',
+        ]:
+        fname = os.path.join(TOPDIR,'tinypy',fname)
+        f = open(fname,'r'); t1 += len(f.read()); f.close()
+        txt = shrink(fname)
+        t2 += len(txt)
+    print "#",t1,t2,t2-65536
+    return t2
+
+def build_64k():
+    for fname in [
+        'tokenize.py','parse.py','encode.py','py2bc.py',
+        'tp.h','list.c','dict.c','misc.c','string.c','builtins.c',
+        'gc.c','ops.c','vm.c','tp.c','tpmain.c',
+        ]:
+        src = os.path.join(TOPDIR,'tinypy',fname)
+        dest = os.path.join(TOPDIR,'build',fname)
+        txt = shrink(src)
+        f = open(dest,'w')
+        f.write(txt)
+        f.close()
+        print '%s saved to %s'%(src,dest)
+
+
 
 if __name__ == '__main__':
     main()

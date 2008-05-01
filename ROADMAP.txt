@@ -29,6 +29,7 @@ what tinypy will be:
     - including some batteries (math, random, re, marshal, pygame?!)
     - Visual Studio compatible
     - documented
+    - you can static compile it and its modules
 
 what tinypy might be:
     - as fast as python (maybe faster?)
