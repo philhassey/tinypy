@@ -44,19 +44,23 @@ Commands:
     vs - build tinypy using Visual Studio 2005 / 2008
     
     64k - build a 64k version of the tinypy source
-    blob - build a single tinypy.c and tinypy.h 
+    blob - build a single tinypy.c and tinypy.h
     
-    build - build CPython module *
-    install - install CPython module *
+    build - build CPython module ***
+    install - install CPython module ***
     
 Options:
     test - fully test tinypy during build
-    jit - build jit module *
+    math - build math module *
+    random - build random module *
     pygame - build pygame module **
-    re - build re module *
-    
-* vaporware
-** not-quite-vaporware
+    marshal - build marshal module ***
+    jit - build jit module ***
+    re - build re module ***
+
+* coming soon!!
+** proof-of-concept included
+*** vaporware
 """
 
 def vars_linux():
