@@ -1,3 +1,8 @@
 * applied patch by Dean Hall to fix several range() bugs
 * applied patch by Krzysztof Kowalczyk to add VS 2005, 2008 compatibility.
 * reorganized the source so that contributed modules can go into contrib
+* reorganized the reorganization so that modules go into modules
+    since that seems less confusing somehow
+* added a crude pygame module - to see it in action:
+    $ python setup.py linux pygame
+    $ ./build/tinypy examples/julia.py

@@ -22,6 +22,7 @@ what tinypy is:
     - well tested
     - easy to read, maintain, and use
     - fun fun fun!!!
+    - you can static compile it and its modules (MIT license, so "it's all good!")
 
 what tinypy will be:
     - sandboxed
@@ -29,15 +30,14 @@ what tinypy will be:
     - including some batteries (math, random, re, marshal, pygame?!)
     - Visual Studio compatible
     - documented
-    - you can static compile it and its modules
 
 what tinypy might be:
     - as fast as python (maybe faster?)
     - including a JIT module
-    - including a dynamic loading module
     - C89 compatible
     - C++ compatible (like lua)
     - a shed-skin module
+    - including a dynamic loading module
 
 what tinypy won't be:
     - a full implementation of python

@@ -3,12 +3,21 @@ import sys
 
 VARS = {}
 TOPDIR = os.path.abspath(os.path.dirname(__file__))
+TEST = False
+CORE = ['tokenize','parse','encode','py2bc']
+MODULES = []
 
 def main():
     chksize()
     if len(sys.argv) < 2:
         print HELP
         return
+    
+    global TEST
+    TEST = 'test' in sys.argv
+    
+    get_libs()
+    build_mymain()
     
     cmd = sys.argv[1]
     if cmd == 'linux':
@@ -21,8 +30,8 @@ def main():
         build_vs()
     elif cmd == '64k':
         build_64k()
-    elif cmd == 'tinypy':
-        build_tinypy()
+    elif cmd == 'blob':
+        build_blob()
     else:
         print 'invalid command'
 
@@ -34,18 +43,20 @@ Commands:
     mingw - build tinypy for mingw under windows
     vs - build tinypy using Visual Studio 2005 / 2008
     
-    64k - build a 64k version of the tinypy source 
-    tinypy - build tinypy.c and tinypy.h
+    64k - build a 64k version of the tinypy source
+    blob - build a single tinypy.c and tinypy.h 
     
     build - build CPython module *
     install - install CPython module *
     
 Options:
-    jit - build contrib jit module *
-    pygame - build contrib pygame module *
-    re - build contrib re module *
+    test - fully test tinypy during build
+    jit - build jit module *
+    pygame - build pygame module **
+    re - build re module *
     
 * vaporware
+** not-quite-vaporware
 """
 
 def vars_linux():
@@ -53,17 +64,20 @@ def vars_linux():
     VARS['$VM'] = './vm'
     VARS['$TINYPY'] = './tinypy'
     VARS['$FLAGS'] = ''
-    VARS['$SDL'] = '`sdl-config --cflags --libs`'
     VARS['$SYS'] = '-linux'
+    
+    if 'pygame' in MODULES:
+        VARS['$FLAGS'] += ' `sdl-config --cflags --libs` '
 
 def vars_windows():
     VARS['$RM'] = 'del'
     VARS['$VM'] = 'vm'
     VARS['$TINYPY'] = 'tinypy'
     VARS['$FLAGS'] = '-mwindows -lmingw32'
-    VARS['$SDL'] = '-lSDLmain -lSDL'
     VARS['$SYS'] = '-mingw32'
 
+    if 'pygame' in MODULES:
+        VARS['$FLAGS'] += ' -lSDLmain -lSDL '
 
 def do_cmd(cmd):
     for k,v in VARS.items():
@@ -78,11 +92,10 @@ def do_cmd(cmd):
         print 'exit_status',r
         sys.exit(r)
 
-MODS = ['tokenize','parse','encode','py2bc']
 
 def build_bc(opt=False):
     out = []
-    for mod in MODS:
+    for mod in CORE:
         out.append("""unsigned char tp_%s[] = {"""%mod)
         fname = mod+".tpc"
         data = open(fname,'rb').read()
@@ -98,7 +111,12 @@ def build_bc(opt=False):
 def open_tinypy(fname,*args):
     return open(os.path.join(TOPDIR,'tinypy',fname),*args)
     
-def build_tp():
+def build_blob():
+    mods = CORE[:]
+    os.chdir(os.path.join(TOPDIR,'tinypy'))
+    for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
+    os.chdir(os.path.join(TOPDIR))
+    
     out = []
     out.append("/*")
     out.extend([v.rstrip() for v in open(os.path.join(TOPDIR,'LICENSE.txt'),'r')])
@@ -123,7 +141,9 @@ def build_tp():
             out.append(line)
     out.append("#endif")
     out.append('')
-    f = open_tinypy('tinypy.h','w')
+    dest = os.path.join(TOPDIR,'build','tinypy.h')
+    print 'writing %s'%dest
+    f = open(dest,'w')
     f.write('\n'.join(out))
     f.close()
     
@@ -131,7 +151,7 @@ def build_tp():
     # if someone wants to include tinypy.c they don't have to have
     # tinypy.h cluttering up their folder
     
-    for mod in MODS:
+    for mod in CORE:
         out.append("""extern unsigned char tp_%s[];"""%mod)
 
                 
@@ -142,40 +162,76 @@ def build_tp():
             if line.find('#include "') != -1: continue
             out.append(line)
     out.append('')
-    f = open_tinypy('tinypy.c','w')
+    dest = os.path.join(TOPDIR,'build','tinypy.c')
+    print 'writing %s'%dest
+    f = open(dest,'w')
     f.write('\n'.join(out))
     f.close()
     
     
 
+
+def build_gcc():
     #compat = '-compat' in sys.argv
     #if compat: do_cmd("gcc -std=c89 -Wall -g vmmain.c $FLAGS -lm -o vm-c89")
     #if compat: do_cmd("g++ -Wall -g vmmain.c $FLAGS -lm -o vm-cpp")
     #if compat: do_cmd("gcc -std=c89 -Wall -g tpmain.c $FLAGS -lm -o tinypy-c89")
     #if compat: do_cmd("g++ -Wall -g tpmain.c $FLAGS -lm -o tinypy-cpp")
-
-def build_gcc():
-    mods = MODS[:]; mods.append('tests')
+    
+    mods = CORE[:]
     os.chdir(os.path.join(TOPDIR,'tinypy'))
-    do_cmd("gcc -Wall -g vmmain.c $FLAGS -lm -o vm")
-    do_cmd('python tests.py $SYS')
+    if TEST:
+        mods.append('tests')
+        do_cmd("gcc -Wall -g vmmain.c $FLAGS -lm -o vm")
+        do_cmd('python tests.py $SYS')
     for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
-    do_cmd('$VM tests.tpc $SYS')
-    for mod in mods: do_cmd('$VM py2bc.tpc %s.py %s.tpc'%(mod,mod))
-    build_bc()
-    do_cmd("gcc -Wall -g tpmain.c $FLAGS -lm -o tinypy")
+    if TEST:
+        do_cmd('$VM tests.tpc $SYS')
+        for mod in mods: do_cmd('$VM py2bc.tpc %s.py %s.tpc'%(mod,mod))
+        build_bc()
+        do_cmd("gcc -Wall -g tpmain.c $FLAGS -lm -o tinypy")
     #second pass - builts optimized binaries and stuff
-    do_cmd('$TINYPY tests.py $SYS')
-    for mod in mods: do_cmd('$TINYPY py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
+    if TEST:
+        do_cmd('$TINYPY tests.py $SYS')
+        for mod in mods: do_cmd('$TINYPY py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
     build_bc(True)
-    do_cmd("gcc -Wall -O2 tpmain.c $FLAGS -lm -o tinypy")
-    do_cmd('$TINYPY tests.py $SYS')
-    print("# OK - we'll try -O3 for extra speed ...")
-    do_cmd("gcc -Wall -O3 tpmain.c $FLAGS -lm -o tinypy")
-    do_cmd('$TINYPY tests.py $SYS')
+    if TEST:
+        do_cmd("gcc -Wall -O2 tpmain.c $FLAGS -lm -o tinypy")
+        do_cmd('$TINYPY tests.py $SYS')
+        print("# OK - we'll try -O3 for extra speed ...")
+        do_cmd("gcc -Wall -O3 tpmain.c $FLAGS -lm -o tinypy")
+        do_cmd('$TINYPY tests.py $SYS')
+    do_cmd("gcc -Wall -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
     print("# OK")
-    build_tp()
-    #do_cmd("gcc -Wall -O3 tinypy-sdl.c tinypy.c $FLAGS $SDL -lm -o tinypy-sdl")
+    
+def get_libs():
+    modules = ['pygame']
+    for m in modules[:]:
+        if m not in sys.argv: modules.remove(m)
+    global MODULES
+    MODULES = modules
+    
+    
+def build_mymain():
+    src = os.path.join(TOPDIR,'tinypy','tpmain.c')
+    out = open(src,'r').read()
+    dest = os.path.join(TOPDIR,'tinypy','mymain.c')
+        
+    vs = []
+    for m in MODULES:
+        vs.append('#include "../modules/%s.c"'%m)
+    out = out.replace('/* INCLUDE */','\n'.join(vs))
+    
+    vs = []
+    for m in MODULES:
+        vs.append('%s_init(tp);'%m)
+    out = out.replace('/* INIT */','\n'.join(vs))
+    
+    f = open(dest,'w')
+    f.write(out)
+    f.close()
+    return True
+    
 
 def build_vs():
     # How to compile on windows with Visual Studio:
@@ -185,7 +241,7 @@ def build_vs():
     # "C:\Program Files\Microsoft Visual Studio 8\Common7\Tools\vsvars32.bat"
     # For VS 2008: "C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
     # Doesn't compile with vc6 (no variadic macros)
-    mods = MODS[:]; mods.append('tests')
+    mods = CORE[:]; mods.append('tests')
     os.chdir(os.path.join(TOPDIR,'tinypy'))
     do_cmd('cl vmmain.c /D "inline=" /Od /Zi /Fdvm.pdb /Fmvm.map /Fevm.exe')
     do_cmd('python tests.py -win')
