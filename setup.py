@@ -96,7 +96,6 @@ def do_cmd(cmd):
         print 'exit_status',r
         sys.exit(r)
 
-
 def build_bc(opt=False):
     out = []
     for mod in CORE:
@@ -158,7 +157,6 @@ def build_blob():
     for mod in CORE:
         out.append("""extern unsigned char tp_%s[];"""%mod)
 
-                
     for fname in ['list.c','dict.c','misc.c','string.c','builtins.c',
         'gc.c','ops.c','vm.c','tp.c','bc.c']:
         for line in open_tinypy(fname,'r'):
@@ -171,9 +169,6 @@ def build_blob():
     f = open(dest,'w')
     f.write('\n'.join(out))
     f.close()
-    
-    
-
 
 def build_gcc():
     #compat = '-compat' in sys.argv
@@ -214,8 +209,7 @@ def get_libs():
         if m not in sys.argv: modules.remove(m)
     global MODULES
     MODULES = modules
-    
-    
+
 def build_mymain():
     src = os.path.join(TOPDIR,'tinypy','tpmain.c')
     out = open(src,'r').read()
@@ -235,7 +229,6 @@ def build_mymain():
     f.write(out)
     f.close()
     return True
-    
 
 def build_vs():
     # How to compile on windows with Visual Studio:
@@ -245,25 +238,27 @@ def build_vs():
     # "C:\Program Files\Microsoft Visual Studio 8\Common7\Tools\vsvars32.bat"
     # For VS 2008: "C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
     # Doesn't compile with vc6 (no variadic macros)
+    # Note: /MD option causes to dynamically link with msvcrt80.dll. This dramatically
+    # reduces size (for vm.exe 159k => 49k). Downside is that msvcrt80.dll must be
+    # present on the system (and not all windows machine have it). You can either re-distribute
+    # msvcrt80.dll or statically link with C runtime by changing /MD to /MT.
     mods = CORE[:]; mods.append('tests')
     os.chdir(os.path.join(TOPDIR,'tinypy'))
-    do_cmd('cl vmmain.c /D "inline=" /Od /Zi /Fdvm.pdb /Fmvm.map /Fevm.exe')
+    do_cmd('cl vmmain.c /D "inline=" /Od /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe')
     do_cmd('python tests.py -win')
     for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
     do_cmd('vm.exe tests.tpc -win')
     for mod in mods: do_cmd('vm.exe py2bc.tpc %s.py %s.tpc'%(mod,mod))
     build_bc()
-    do_cmd('cl /Od tpmain.c /D "inline=" /Zi /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe')
+    do_cmd('cl /Od tpmain.c /D "inline=" /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe')
     #second pass - builts optimized binaries and stuff
     do_cmd('tinypy.exe tests.py -win')
     for mod in mods: do_cmd('tinypy.exe py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
     build_bc(True)
-    do_cmd('cl /Os vmmain.c /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /Fdvm.pdb /Fmvm.map /Fevm.exe /link /opt:ref /opt:icf')
-    do_cmd('cl /Os tpmain.c   /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe /link /opt:ref /opt:icf')
+    do_cmd('cl /Os vmmain.c /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe /link /opt:ref /opt:icf')
+    do_cmd('cl /Os tpmain.c /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe /link /opt:ref,icf /OPT:NOWIN98')
     do_cmd("tinypy.exe tests.py -win")
     do_cmd("dir *.exe")
-    
-
 
 def shrink(fname):
     f = open(fname,'r'); lines = f.readlines(); f.close()
@@ -325,8 +320,6 @@ def build_64k():
         f.write(txt)
         f.close()
         print '%s saved to %s'%(src,dest)
-
-
 
 if __name__ == '__main__':
     main()
