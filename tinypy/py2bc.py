@@ -22,6 +22,7 @@ def _import(name):
     if not exists(tpc): raise
     code = load(tpc)
     g = {'__name__':name,'__code__':code}
+    g['__dict__'] = g
     MODULES[name] = g
     exec(code,g)
     return g

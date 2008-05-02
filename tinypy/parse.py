@@ -237,6 +237,14 @@ def class_nud(t):
     advance(':')
     items.append(ilst('methods',block()))
     return t
+
+def from_nud(t):
+    items = t['items'] = []
+    items.append(expression(0))
+    advance('import')
+    items.append(expression(0))
+    return t
+
 def for_nud(t):
     items = t['items'] = []
     tweak('in',0)
@@ -350,6 +358,7 @@ base_dmap = {
     'raise':{'lbp':0,'nud':prefix_nud0,'type':'raise','bp':20,},
     'return':{'lbp':0,'nud':prefix_nud0,'type':'return','bp':10,},
     'import':{'lbp':0,'nud':prefix_nuds,'type':'import','bp':20,},
+    'from':{'lbp':0,'nud':from_nud,'type':'from','bp':20,},
     'del':{'lbp':0,'nud':prefix_nuds,'type':'del','bp':10,},
     'global':{'lbp':0,'nud':prefix_nuds,'type':'globals','bp':20,},
 

@@ -280,7 +280,8 @@ tp_obj tp_import(TP,char *fname, char *name, void *codes) {
 
     g = tp_dict(tp);
     tp_set(tp,g,tp_string("__name__"),tp_string(name));
-    tp_set(tp,g,tp_string("__code__"),code); 
+    tp_set(tp,g,tp_string("__code__"),code);
+    tp_set(tp,g,tp_string("__dict__"),g); 
     tp_frame(tp,g,codes,0);
     tp_set(tp,tp->modules,tp_string(name),g);
     

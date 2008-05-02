@@ -12,7 +12,7 @@ ISYMBOLS = '`-=[];,./~!@$%^&*()+{}:<>?'
 SYMBOLS = [
     'def','class','yield','return','pass','and','or','not','in','import',
     'is','while','break','for','continue','if','else','elif','try',
-    'except','raise','True','False','None','global','del',
+    'except','raise','True','False','None','global','del','from',
     '-','+','*','**','/','%','<<','>>',
     '-=','+=','*=','/=','=','==','!=','<','>',
     '<=','>=','[',']','{','}','(',')','.',':',',',';','&','|','!',

@@ -322,6 +322,26 @@ def do_import(t):
             mod]})
         mod['type'] = 'name'
         do_set_ctx(mod,{'type':'reg','val':v})
+def do_from(t):
+    mod = t['items'][0]
+    mod['type'] = 'string'
+    v = do_call({'from':t['from'],'items':[
+        {'from':t['from'],'type':'name','val':'import'},
+        mod]})
+    item = t['items'][1]
+    if item['val'] == '*':
+        do_call({'from':t['from'],'items':[
+            {'from':t['from'],'type':'name','val':'merge'},
+            {'type':'name','val':'__dict__'},
+            {'type':'reg','val':v}]})
+    else:
+        item['type'] = 'string'
+        do_set_ctx(
+            {'type':'get','items':[ {'type':'name','val':'__dict__'}, item ] },
+            {'type':'get','items':[ {'type':'reg','val':v}, item ] }
+            )
+
+        
 def do_globals(t):
     for t in t['items']:
         if t['val'] not in D.globals:
@@ -600,7 +620,7 @@ fmap = {
     'return':do_return,'while':do_while,'if':do_if,
     'break':do_break,'pass':do_pass,'continue':do_continue,'for':do_for,
     'class':do_class,'raise':do_raise,'try':do_try,'import':do_import,
-    'globals':do_globals,'del':do_del,
+    'globals':do_globals,'del':do_del,'from':do_from,
 }
 rmap = {
     'list':do_list, 'tuple':do_list, 'dict':do_dict, 'slice':do_list,

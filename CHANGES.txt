@@ -6,3 +6,6 @@
 * added a crude pygame module - to see it in action:
     $ python setup.py linux pygame
     $ ./build/tinypy examples/julia.py
+* added support for
+    from x import *
+    from x import y

@@ -676,6 +676,9 @@ test()
 
     test_range()
     
+    t_render(['v="OK"',"from tmp1 import *\nprint(v)"],"OK")
+    t_render(['v="OK"',"from tmp1 import v\nprint(v)"],"OK")
+    t_render(['x="X";y="K"',"x = 'O'\nfrom tmp1 import y\nprint(x+y)"],"OK")
 
 
 ################################################################################
