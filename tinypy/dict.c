@@ -35,12 +35,17 @@ int tp_hash(TP,tp_obj v) {
 }
 
 void _tp_dict_hash_set(TP,_tp_dict *self, int hash, tp_obj k, tp_obj v) {
+    tp_item item;
     int i,idx = hash&self->mask;
     for (i=idx; i<idx+self->alloc; i++) {
         int n = i&self->mask;
         if (self->items[n].used > 0) { continue; }
         if (self->items[n].used == 0) { self->used += 1; }
-        self->items[n] = (tp_item){1,hash,k,v};
+        item.used = 1;
+        item.hash = hash;
+        item.key = k;
+        item.val = v;
+        self->items[n] = item;
         self->len += 1;
         return;
     }
@@ -48,9 +53,9 @@ void _tp_dict_hash_set(TP,_tp_dict *self, int hash, tp_obj k, tp_obj v) {
 }
 
 void _tp_dict_tp_realloc(TP,_tp_dict *self,int len) {
-    len = _tp_max(8,len);
     tp_item *items = self->items;
     int i,alloc = self->alloc;
+    len = _tp_max(8,len);
 
     self->items = tp_malloc(len*sizeof(tp_item));
     self->alloc = len; self->mask = len-1;
@@ -118,11 +123,13 @@ _tp_dict *_tp_dict_new(void) {
     return self;
 }
 tp_obj _tp_dict_copy(TP,tp_obj rr) {
+    tp_obj obj = {TP_DICT};
     _tp_dict *o = rr.dict.val;
     _tp_dict *r = _tp_dict_new(); *r = *o;
     r->items = tp_malloc(sizeof(tp_item)*o->alloc);
     memcpy(r->items,o->items,sizeof(tp_item)*o->alloc);
-    return tp_track(tp,(tp_obj)(tp_dict_){TP_DICT,r});
+    obj.dict.val = r;
+    return tp_track(tp,obj);
 }
 
 int _tp_dict_next(TP,_tp_dict *self) {
@@ -147,8 +154,9 @@ tp_obj tp_merge(TP) {
 }
 
 tp_obj tp_dict(TP) {
-    tp_obj r = (tp_obj)(tp_dict_){TP_DICT,_tp_dict_new()};
-    return tp?tp_track(tp,r):r;
+    tp_obj r = {TP_DICT};
+    r.dict.val = _tp_dict_new();
+    return tp ? tp_track(tp,r) : r;
 }
 
 tp_obj tp_dict_n(TP,int n, tp_obj* argv) {

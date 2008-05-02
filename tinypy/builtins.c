@@ -118,13 +118,20 @@ tp_obj tp_save(TP) {
 }
 
 tp_obj tp_load(TP) {
-    char *fname = TP_STR();
-    struct stat stbuf; stat(fname, &stbuf); long l = stbuf.st_size;
     FILE *f;
+    long l;
+    tp_obj r;
+    char *s;
+    char *fname = TP_STR();
+    struct stat stbuf; 
+    stat(fname, &stbuf); 
+    l = stbuf.st_size;
     f = fopen(fname,"rb");
-    if (!f) { tp_raise(None,"tp_load(%s)",fname); }
-    tp_obj r = tp_string_t(tp,l);
-    char *s = r.string.val;
+    if (!f) { 
+        tp_raise(None,"tp_load(%s)",fname); 
+    }
+    r = tp_string_t(tp,l);
+    s = r.string.val;
     fread(s,1,l,f);
     fclose(f);
     return tp_track(tp,r);

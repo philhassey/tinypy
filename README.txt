@@ -1,16 +1,16 @@
 64k tinypy
-"batteries not included"
+"batteries not (yet) included"
 Copyright (c) 2008 Phil Hassey
 
 Check it out:
 
-$ python build.py
-$ ./tinypy-sdl julia.py
-$ ./tinypy your-program-goes-here.py
+$ python setup.py linux pygame
+$ ./build/tinypy examples/julia.py
+$ ./build/tinypy your-program-goes-here.py
 
 Depends on:
-- python (just for bootstrapping)
-- sdl (libsdl-dev, optional)
+- python (only for bootstrapping)
+- sdl (for the pygame module)
 - gcc
 
 Thanks to allefant and the python community for all the tips and feedback!

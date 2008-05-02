@@ -1,14 +1,14 @@
 # figure out if we're in python or tinypy (tinypy displays "1.0" as "1")
 is_tinypy = (str(1.0) == "1")
 if not is_tinypy:
-    from build import *
+    from boot import *
 
 ################################################################################
 RM = 'rm -f '
 VM = './vm '
 TINYPY = './tinypy '
 TMP = 'tmp.txt'
-if '-mingw32' in ARGV:
+if '-mingw32' in ARGV or "-win" in ARGV:
     RM = 'del '
     VM = 'vm '
     TINYPY = 'tinypy '
@@ -18,8 +18,8 @@ def system_rm(fname):
     system(RM+fname)
 
 ################################################################################
-if not is_tinypy:
-    v = chksize()
+#if not is_tinypy:
+    #v = chksize()
     #assert (v < 65536)
 
 ################################################################################
@@ -675,6 +675,7 @@ test()
     #t_render("x = 'OK',\nprint(x[0])","OK")
 
     test_range()
+    
 
 
 ################################################################################

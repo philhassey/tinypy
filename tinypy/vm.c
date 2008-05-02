@@ -70,8 +70,8 @@ void _tp_raise(TP,tp_obj e) {
 }
 
 void tp_print_stack(TP) {
-    printf("\n");
     int i;
+    printf("\n");
     for (i=0; i<=tp->cur; i++) {
         if (!tp->frames[i].lineno) { continue; }
         printf("File \"%s\", line %d, in %s\n  %s\n",
@@ -99,7 +99,8 @@ void tp_handle(TP) {
 
 void _tp_call(TP,tp_obj *dest, tp_obj fnc, tp_obj params) {
     if (fnc.type == TP_DICT) {
-        return _tp_call(tp,dest,tp_get(tp,fnc,tp_string("__call__")),params);
+        _tp_call(tp,dest,tp_get(tp,fnc,tp_string("__call__")),params);
+        return;
     }
     if (fnc.type == TP_FNC && !(fnc.fnc.ftype&1)) {
         *dest = _tp_tcall(tp,fnc);
@@ -262,11 +263,13 @@ tp_obj tp_call(TP, char *mod, char *fnc, tp_obj params) {
 }
 
 tp_obj tp_import(TP,char *fname, char *name, void *codes) {
+    tp_obj code = None;
+    tp_obj g;
+
     if (!((fname && strstr(fname,".tpc")) || codes)) {
         return tp_call(tp,"py2bc","import_fname",tp_params_v(tp,2,tp_string(fname),tp_string(name)));
     }
 
-    tp_obj code = None;
     if (!codes) {
         tp_params_v(tp,1,tp_string(fname));
         code = tp_load(tp);
@@ -275,7 +278,7 @@ tp_obj tp_import(TP,char *fname, char *name, void *codes) {
         code = tp_data(tp,codes);
     }
 
-    tp_obj g = tp_dict(tp);
+    g = tp_dict(tp);
     tp_set(tp,g,tp_string("__name__"),tp_string(name));
     tp_set(tp,g,tp_string("__code__"),code); 
     tp_frame(tp,g,codes,0);
@@ -298,13 +301,15 @@ tp_obj tp_exec_(TP) {
 
 tp_obj tp_import_(TP) {
     tp_obj mod = TP_OBJ();
+    char *s;
+    tp_obj r;
 
     if (tp_has(tp,tp->modules,mod).number.val) {
         return tp_get(tp,tp->modules,mod);
     }
 
-    char *s = STR(mod);
-    tp_obj r = tp_import(tp,STR(tp_add(tp,mod,tp_string(".tpc"))),s,0);
+    s = STR(mod);
+    r = tp_import(tp,STR(tp_add(tp,mod,tp_string(".tpc"))),s,0);
     return r;
 }
 

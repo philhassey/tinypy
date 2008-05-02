@@ -67,6 +67,7 @@ tp_obj tp_iter(TP,tp_obj self, tp_obj k) {
 
 tp_obj tp_get(TP,tp_obj self, tp_obj k) {
     int type = self.type;
+    tp_obj r;
     if (type == TP_DICT) {
         return _tp_dict_get(tp,self.dict.val,k,"tp_get");
     } else if (type == TP_LIST) {
@@ -87,7 +88,8 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
             } else if (strcmp("extend",STR(k)) == 0) {
                 return tp_method(tp,self,tp_extend);
             } else if (strcmp("*",STR(k)) == 0) {
-                tp_params_v(tp,1,self); tp_obj r = tp_copy(tp);
+                tp_params_v(tp,1,self); 
+                r = tp_copy(tp);
                 self.list.val->len=0;
                 return r;
             }
@@ -194,8 +196,11 @@ tp_obj tp_add(TP,tp_obj a, tp_obj b) {
         memcpy(s,a.string.val,al); memcpy(s+al,b.string.val,bl);
         return tp_track(tp,r);
     } else if (a.type == TP_LIST && a.type == b.type) {
-        tp_params_v(tp,1,a); tp_obj r = tp_copy(tp);
-        tp_params_v(tp,2,r,b); tp_extend(tp);
+        tp_obj r;
+        tp_params_v(tp,1,a); 
+        r = tp_copy(tp);
+        tp_params_v(tp,2,r,b); 
+        tp_extend(tp);
         return r;
     }
     tp_raise(None,"tp_add(%s,%s)",STR(a),STR(b));
@@ -246,7 +251,7 @@ int tp_cmp(TP,tp_obj a, tp_obj b) {
         }
         case TP_DICT: return a.dict.val - b.dict.val;
         case TP_FNC: return a.fnc.val - b.fnc.val;
-        case TP_DATA: return a.data.val - b.data.val;
+        case TP_DATA: return (char*)a.data.val - (char*)b.data.val;
     }
     tp_raise(0,"tp_cmp(%s,%s)",STR(a),STR(b));
 }
