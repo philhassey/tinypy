@@ -9,3 +9,5 @@
 * added support for
     from x import *
     from x import y
+* trimmed off 1064 bytes by changing all the tokens from dicts to
+    a Token class in tokenize, parse, encode modules

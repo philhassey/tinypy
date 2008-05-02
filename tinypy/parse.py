@@ -1,14 +1,12 @@
 import tokenize
-
-def mktok(t,typ,val,itms=None):
-    r = {'from':t['from'],'type':typ,'val':val}
-    if itms != None: r['items'] = itms
-    return r
+from tokenize import Token
+if '.' in str(1.0):
+    from boot import *
 
 def check(t,*vs):
     if vs[0] == None: return True
-    if t['type'] in vs: return True
-    if t['type'] == 'symbol' and t['val'] in vs: return True
+    if t.type in vs: return True
+    if t.type == 'symbol' and t.val in vs: return True
     return False
 
 def tweak(k,v):
@@ -43,29 +41,29 @@ class PData:
             t = self.tokens[self.pos]
             self.pos += 1
         else:
-            t = {'from':(0,0),'type':'eof','val':'eof'}
+            t = Token((0,0),'eof','eof')
         self.token = do(t)
         return t
 def error(ctx,t):
     print t
-    tokenize.u_error(ctx,P.s,t['from'])
+    tokenize.u_error(ctx,P.s,t.pos)
 
 def nud(t):
-    if 'nud' not in t:
-        error('no nud',t)
-    return t['nud'](t)
+    #if 'nud' not in t:
+        #error('no nud',t)
+    return t.nud(t)
 def led(t,left):
-    if 'led' not in t:
-        error('no led',t)
-    return t['led'](t,left)
+    #if 'led' not in t:
+        #error('no led',t)
+    return t.led(t,left)
 def get_lbp(t):
-    if 'lbp' not in t:
-        error('no lbp',t)
-    return t['lbp']
+    #if 'lbp' not in t:
+        #error('no lbp',t)
+    return t.lbp
 def get_items(t):
-    if 'items' not in t:
-        error('no items',t)
-    return t['items']
+    #if 'items' not in t:
+        #error('no items',t)
+    return t.items
 
 def expression(rbp):
     t = P.token
@@ -78,26 +76,26 @@ def expression(rbp):
     return left
 
 def infix_led(t,left):
-    t['items'] = [left,expression(t['bp'])]
+    t.items = [left,expression(t.bp)]
     return t
 def infix_is(t,left):
     if check(P.token,'not'):
-        t['val'] = 'isnot'
+        t.val = 'isnot'
         advance('not')
-    t['items'] = [left,expression(t['bp'])]
+    t.items = [left,expression(t.bp)]
     return t
 def infix_not(t,left):
     advance('in')
-    t['val'] = 'notin'
-    t['items'] = [left,expression(t['bp'])]
+    t.val = 'notin'
+    t.items = [left,expression(t.bp)]
     return t
 def infix_tuple(t,left):
-    r = expression(t['bp'])
-    if left['val'] == ',':
-        left['items'].append(r)
+    r = expression(t.bp)
+    if left.val == ',':
+        left.items.append(r)
         return left
-    t['items'] = [left,r]
-    t['type'] = 'tuple'
+    t.items = [left,r]
+    t.type = 'tuple'
     return t
 def lst(t):
     if t == None: return []
@@ -105,41 +103,41 @@ def lst(t):
         return get_items(t)
     return [t]
 def ilst(typ,t):
-    return mktok(t,typ,typ,lst(t))
+    return Token(t.pos,typ,typ,lst(t))
 
 def call_led(t,left):
-    r = mktok(t,'call','$',[left])
+    r = Token(t.pos,'call','$',[left])
     while not check(P.token,')'):
         tweak(',',0)
-        r['items'].append(expression(0))
-        if P.token['val'] == ',': advance(',')
+        r.items.append(expression(0))
+        if P.token.val == ',': advance(',')
         restore()
     advance(")")
     return r
 def get_led(t,left):
-    r = mktok(t,'get','.',[left])
+    r = Token(t.pos,'get','.',[left])
     items =  [left]
     more = False
     while not check(P.token,']'):
         more = False
         if check(P.token,':'):
-            items.append(mktok(P.token,'symbol','None'))
+            items.append(Token(P.token.pos,'symbol','None'))
         else:
             items.append(expression(0))
         if check(P.token,':'):
             advance(':')
             more = True
     if more:
-        items.append(mktok(P.token,'symbol','None'))
+        items.append(Token(P.token.pos,'symbol','None'))
     if len(items) > 2:
-        items = [left,mktok(t,'slice',':',items[1:])]
-    r['items'] = items
+        items = [left,Token(t.pos,'slice',':',items[1:])]
+    r.items = items
     advance("]")
     return r
 def dot_led(t,left):
-    r = expression(t['bp'])
-    r['type'] = 'string'
-    t['items'] = [left,r]
+    r = expression(t.bp)
+    r.type = 'string'
+    t.items = [left,r]
     return t
 
 def itself(t):
@@ -151,33 +149,33 @@ def paren_nud(t):
     advance(')')
     return r
 def list_nud(t):
-    t['type'] = 'list'
-    t['val'] = '[]'
-    t['items'] = []
+    t.type = 'list'
+    t.val = '[]'
+    t.items = []
     next = P.token
     tweak(',',0)
     while not check(P.token,'for',']'):
         r = expression(0)
-        t['items'].append(r)
-        if P.token['val'] == ',': advance(',')
+        t.items.append(r)
+        if P.token.val == ',': advance(',')
     if check(P.token,'for'):
-        t['type'] = 'comp'
+        t.type = 'comp'
         advance('for')
         tweak('in',0)
-        t['items'].append(expression(0))
+        t.items.append(expression(0))
         advance('in')
-        t['items'].append(expression(0))
+        t.items.append(expression(0))
         restore()
     restore()
     advance(']')
     return t
 def dict_nud(t):
-    t['type']='dict'
-    t['val'] = '{}'
-    t['items'] = []
+    t.type='dict'
+    t.val = '{}'
+    t.items = []
     tweak(',',0)
     while not check(P.token,'}'):
-        t['items'].append(expression(0))
+        t.items.append(expression(0))
         if check(P.token,':',','): advance()
     restore()
     advance('}')
@@ -205,18 +203,18 @@ def block():
     while check(P.token,'nl'): advance()
 
     if len(items) > 1:
-        return mktok(tok,'statements',';',items)
+        return Token(tok.pos,'statements',';',items)
     return items.pop()
 
 def def_nud(t):
-    items = t['items'] = []
+    items = t.items = []
     items.append(P.token); advance()
     advance('(')
-    r = mktok(t,'symbol','():',[])
+    r = Token(t.pos,'symbol','():',[])
     items.append(r)
     while not check(P.token,')'):
         tweak(',',0)
-        r['items'].append(expression(0))
+        r.items.append(expression(0))
         if check(P.token,','): advance(',')
         restore()
     advance(')')
@@ -226,27 +224,27 @@ def def_nud(t):
 
 
 def while_nud(t):
-    items = t['items'] = []
+    items = t.items = []
     items.append(expression(0))
     advance(':')
     items.append(block())
     return t
 def class_nud(t):
-    items = t['items'] = []
+    items = t.items = []
     items.append(expression(0))
     advance(':')
     items.append(ilst('methods',block()))
     return t
 
 def from_nud(t):
-    items = t['items'] = []
+    items = t.items = []
     items.append(expression(0))
     advance('import')
     items.append(expression(0))
     return t
 
 def for_nud(t):
-    items = t['items'] = []
+    items = t.items = []
     tweak('in',0)
     items.append(expression(0))
     advance('in')
@@ -256,27 +254,27 @@ def for_nud(t):
     items.append(block())
     return t
 def if_nud(t):
-    items = t['items'] = []
+    items = t.items = []
     a = expression(0)
     advance(':')
     b = block()
-    items.append(mktok(t,'elif','elif',[a,b]))
+    items.append(Token(t.pos,'elif','elif',[a,b]))
     while check(P.token,'elif'):
         tok = P.token
         advance('elif')
         a = expression(0)
         advance(':')
         b = block()
-        items.append(mktok(tok,'elif','elif',[a,b]))
+        items.append(Token(tok.pos,'elif','elif',[a,b]))
     if check(P.token,'else'):
         tok = P.token
         advance('else')
         advance(':')
         b = block()
-        items.append(mktok(tok,'else','else',[b]))
+        items.append(Token(tok.pos,'else','else',[b]))
     return t
 def try_nud(t):
-    items = t['items'] = []
+    items = t.items = []
     advance(':')
     b = block()
     items.append(b)
@@ -284,45 +282,46 @@ def try_nud(t):
         tok = P.token
         advance('except')
         if not check(P.token,':'): a = expression(0)
-        else: a = mktok(tok,'symbol','None')
+        else: a = Token(tok.pos,'symbol','None')
         advance(':')
         b = block()
-        items.append(mktok(tok,'except','except',[a,b]))
+        items.append(Token(tok.pos,'except','except',[a,b]))
     if check(P.token,'else'):
         tok = P.token
         advance('else')
         advance(':')
         b = block()
-        items.append(mktok(tok,'else','else',[b]))
+        items.append(Token(tok.pos,'else','else',[b]))
     return t
 def prefix_nud(t):
-    bp = 70
-    if 'bp' in t: bp = t['bp']
-    t['items'] = [expression(bp)]
+    #bp = 70
+    #if 'bp' in t: bp = t['bp']
+    bp = t.bp
+    t.items = [expression(bp)]
     return t
 def prefix_nud0(t):
     if check(P.token,'nl',';','eof','dedent'): return t
     return prefix_nud(t)
 def prefix_nuds(t):
     r = expression(0)
-    return ilst(t['type'],r)
+    return ilst(t.type,r)
 
 def prefix_neg(t):
     r = expression(50)
-    if r['type'] == 'number':
-        r['val'] = str(-float(r['val']))
+    if r.type == 'number':
+        r.val = str(-float(r.val))
         return r
-    t['items'] = [mktok(t,'number','0'),r]
+    t.items = [Token(t.pos,'number','0'),r]
     return t
 def vargs_nud(t):
     r = prefix_nud(t)
-    t['type'] = 'args'
-    t['val'] = '*'
+    t.type = 'args'
+    t.val = '*'
     return t
 def nargs_nud(t):
     r = prefix_nud(t)
-    t['type'] = 'nargs'
-    t['val'] = '**'
+    t.type = 'nargs'
+    t.val = '**'
     return t
 
 
@@ -386,9 +385,9 @@ def gmap(t,v):
     return dmap[v]
 
 def do(t):
-    if t['type'] == 'symbol': r = gmap(t,t['val'])
-    else: r = gmap(t,t['type'])
-    for k in r: t[k] = r[k]
+    if t.type == 'symbol': r = gmap(t,t.val)
+    else: r = gmap(t,t.type)
+    merge(t,r)
     return t
 def do_module():
     tok = P.token
@@ -396,7 +395,7 @@ def do_module():
     while not check(P.token,'eof'):
         items.append(block())
     if len(items) > 1:
-        return mktok(tok,'statements',';',items)
+        return Token(tok.pos,'statements',';',items)
     return items.pop()
 
 def parse(s,tokens,wrap=0):

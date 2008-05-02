@@ -8,6 +8,12 @@ def _boot_init():
     ARGV = sys.argv
 _boot_init()
 
+def merge(a,b):
+    if isinstance(a,dict):
+        for k in b: a[k] = b[k]
+    else:
+        for k in b: setattr(a,k,b[k])
+
 def number(v):
     if type(v) is str and v[0:2] == '0x':
         v = int(v[2:],16)

@@ -24,11 +24,11 @@ def system_rm(fname):
 
 ################################################################################
 def t_show(t):
-    if t['type'] == 'string': return '"'+t['val']+'"'
-    if t['type'] == 'number': return t['val']
-    if t['type'] == 'symbol': return t['val']
-    if t['type'] == 'name': return '$'+t['val']
-    return t['type']
+    if t.type == 'string': return '"'+t.val+'"'
+    if t.type == 'number': return t.val
+    if t.type == 'symbol': return t.val
+    if t.type == 'name': return '$'+t.val
+    return t.type
 def t_tokenize(s,exp=''):
     import tokenize
     result = tokenize.tokenize(s)
@@ -67,13 +67,13 @@ if __name__ == '__main__':
 ################################################################################
 
 def t_lisp(t):
-    if t['type'] == 'block':
-        return """{%s}"""%' '.join([t_lisp(tt) for tt in t['items']])
-    if t['type'] == 'statement':
-        return """%s;"""%' '.join([t_lisp(tt) for tt in t['items']])
-    if 'items' not in t: return t['val']
-    args = ''.join([" "+t_lisp(tt) for tt in t['items']])
-    return "("+t['val']+args+")"
+    if t.type == 'block':
+        return """{%s}"""%' '.join([t_lisp(tt) for tt in t.items])
+    if t.type == 'statement':
+        return """%s;"""%' '.join([t_lisp(tt) for tt in t.items])
+    if t.items == None: return t.val
+    args = ''.join([" "+t_lisp(tt) for tt in t.items])
+    return "("+t.val+args+")"
 
 def t_parse(s,ex=''):
     import tokenize, parse

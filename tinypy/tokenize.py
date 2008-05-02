@@ -1,3 +1,7 @@
+class Token:
+    def __init__(self,pos=(0,0),type='symbol',val=None,items=None):
+        self.pos,self.type,self.val,self.items=pos,type,val,items
+
 def u_error(ctx,s,i):
     y,x = i
     line = s.split('\n')[y-1]
@@ -23,7 +27,7 @@ class TData:
     def __init__(self):
         self.y,self.yi,self.nl = 1,0,True
         self.res,self.indent,self.braces = [],[0],0
-    def add(self,t,v): self.res.append({'from':self.f,'type':t,'val':v})
+    def add(self,t,v): self.res.append(Token(self.f,t,v))
 
 def clean(s):
     s = s.replace('\r\n','\n')
