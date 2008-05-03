@@ -112,10 +112,10 @@ tp_obj tp_list(TP) {
 }
 
 tp_obj tp_list_n(TP,int n,tp_obj *argv) {
-    int i; 
+    int i;
     tp_obj r = tp_list(tp); _tp_list_realloc(r.list.val,n);
     for (i=0; i<n; i++) {
-        _tp_list_append(tp,r.list.val,argv[i]); 
+        _tp_list_append(tp,r.list.val,argv[i]);
     }
     return r;
 }

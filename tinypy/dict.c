@@ -11,12 +11,12 @@ void _tp_dict_free(_tp_dict *self) {
     tp_free(self);
 }
 
-// void _tp_dict_reset(_tp_dict *self) {
-//     memset(self->items,0,self->alloc*sizeof(tp_item));
-//     self->len = 0;
-//     self->used = 0;
-//     self->cur = 0;
-// }
+/* void _tp_dict_reset(_tp_dict *self) {
+       memset(self->items,0,self->alloc*sizeof(tp_item));
+       self->len = 0;
+       self->used = 0;
+       self->cur = 0;
+   }*/
 
 int tp_hash(TP,tp_obj v) {
     switch (v.type) {

@@ -181,26 +181,26 @@ def build_gcc():
     os.chdir(os.path.join(TOPDIR,'tinypy'))
     if TEST:
         mods.append('tests')
-        do_cmd("gcc -Wall -g vmmain.c $FLAGS -lm -o vm")
+        do_cmd("gcc -std=c89 -Wall -g vmmain.c $FLAGS -lm -o vm")
         do_cmd('python tests.py $SYS')
     for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
     if TEST:
         do_cmd('$VM tests.tpc $SYS')
         for mod in mods: do_cmd('$VM py2bc.tpc %s.py %s.tpc'%(mod,mod))
         build_bc()
-        do_cmd("gcc -Wall -g tpmain.c $FLAGS -lm -o tinypy")
+        do_cmd("gcc -std=c89 -Wall -g tpmain.c $FLAGS -lm -o tinypy")
     #second pass - builts optimized binaries and stuff
     if TEST:
         do_cmd('$TINYPY tests.py $SYS')
         for mod in mods: do_cmd('$TINYPY py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
     build_bc(True)
     if TEST:
-        do_cmd("gcc -Wall -O2 tpmain.c $FLAGS -lm -o tinypy")
+        do_cmd("gcc -std=c89 -Wall -O2 tpmain.c $FLAGS -lm -o tinypy")
         do_cmd('$TINYPY tests.py $SYS')
         print("# OK - we'll try -O3 for extra speed ...")
         do_cmd("gcc -Wall -O3 tpmain.c $FLAGS -lm -o tinypy")
         do_cmd('$TINYPY tests.py $SYS')
-    do_cmd("gcc -Wall -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
+    do_cmd("gcc -std=c89 -Wall -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
     print("# OK")
     
 def get_libs():
@@ -267,6 +267,7 @@ def shrink(fname):
     'vm','gc','params','STR',
     'int','float','return','free','delete','init',
     'abs','round','system','pow','div','raise','hash','index','printf','main']
+    passing = False
     for line in lines:
         #quit if we've already converted
         if '\t' in line: return ''.join(lines)
@@ -279,7 +280,16 @@ def shrink(fname):
         
         #remove comments
         if '.c' in fname or '.h' in fname:
-            if line.strip()[:2] == '//': continue
+            #start block comment
+            if line.strip()[:2] == '/*':
+                passing = True;
+            #end block comment
+            if line.strip()[-2:] == '*/':
+               passing = False;
+               continue
+            #skip lines inside block comments
+            if passing:
+                continue
         if '.py' in fname:
             if line.strip()[:1] == '#': continue
         

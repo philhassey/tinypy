@@ -3,7 +3,7 @@ tp_obj *tp_ptr(tp_obj o) {
     return ptr;
 }
 
-tp_obj _tp_dcall(TP,tp_obj fnc(TP)) { 
+tp_obj _tp_dcall(TP,tp_obj fnc(TP)) {
     return fnc(tp);
 }
 tp_obj _tp_tcall(TP,tp_obj fnc) {
@@ -61,8 +61,8 @@ tp_obj tp_params_v(TP,int n,...) {
     int i;
     tp_obj r = tp_params(tp);
     va_list a; va_start(a,n);
-    for (i=0; i<n; i++) { 
-        _tp_list_append(tp,r.list.val,va_arg(a,tp_obj)); 
+    for (i=0; i<n; i++) {
+        _tp_list_append(tp,r.list.val,va_arg(a,tp_obj));
     }
     va_end(a);
     return r;

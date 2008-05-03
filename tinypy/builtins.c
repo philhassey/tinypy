@@ -123,12 +123,12 @@ tp_obj tp_load(TP) {
     tp_obj r;
     char *s;
     char *fname = TP_STR();
-    struct stat stbuf; 
-    stat(fname, &stbuf); 
+    struct stat stbuf;
+    stat(fname, &stbuf);
     l = stbuf.st_size;
     f = fopen(fname,"rb");
-    if (!f) { 
-        tp_raise(None,"tp_load(%s)",fname); 
+    if (!f) {
+        tp_raise(None,"tp_load(%s)",fname);
     }
     r = tp_string_t(tp,l);
     s = r.string.val;
@@ -141,7 +141,7 @@ tp_obj tp_load(TP) {
 tp_obj tp_fpack(TP) {
     tp_num v = TP_NUM();
     tp_obj r = tp_string_t(tp,sizeof(tp_num));
-    *(tp_num*)r.string.val = v; 
+    *(tp_num*)r.string.val = v;
     return tp_track(tp,r);
 }
 

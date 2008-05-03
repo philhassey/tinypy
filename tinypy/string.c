@@ -67,15 +67,15 @@ tp_obj tp_split(TP) {
     tp_obj v = TP_OBJ();
     tp_obj d = TP_OBJ();
     tp_obj r = tp_list(tp);
-    
+
     int i;
     while ((i=_tp_str_index(v,d))!=-1) {
         _tp_list_append(tp,r.list.val,tp_string_slice(tp,v,0,i));
         v.string.val += i + d.string.len; v.string.len -= i + d.string.len;
-//         tp_grey(tp,r); // should stop gc or something instead
+/*         tp_grey(tp,r); // should stop gc or something instead*/
     }
     _tp_list_append(tp,r.list.val,tp_string_slice(tp,v,0,v.string.len));
-//     tp_grey(tp,r); // should stop gc or something instead
+/*     tp_grey(tp,r); // should stop gc or something instead*/
     return r;
 }
 
@@ -155,8 +155,8 @@ tp_obj tp_replace(TP) {
         memcpy(d,v.string.val,v.string.len); d += v.string.len;
         z = p;
     }
-    memcpy(d,z.string.val,(s.string.val + s.string.len) - z.string.val); 
-    
+    memcpy(d,z.string.val,(s.string.val + s.string.len) - z.string.val);
+
     return tp_track(tp,rr);
 }
 

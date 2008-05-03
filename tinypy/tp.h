@@ -13,10 +13,10 @@
 #define tp_realloc(x,y) realloc(x,y)
 #define tp_free(x) free(x)
 
-// #include <gc/gc.h>
-// #define tp_malloc(x) GC_MALLOC(x)
-// #define tp_realloc(x,y) GC_REALLOC(x,y)
-// #define tp_free(x)
+/* #include <gc/gc.h>
+   #define tp_malloc(x) GC_MALLOC(x)
+   #define tp_realloc(x,y) GC_REALLOC(x,y)
+   #define tp_free(x)*/
 
 enum {
     TP_NONE,TP_NUMBER,TP_STRING,TP_DICT,
@@ -122,7 +122,7 @@ typedef struct tp_frame_ {
 
 #define TP_GCMAX 4096
 #define TP_FRAMES 256
-// #define TP_REGS_PER_FRAME 256
+/* #define TP_REGS_PER_FRAME 256*/
 #define TP_REGS 16384
 typedef struct tp_vm {
     tp_obj builtins;
@@ -138,7 +138,7 @@ typedef struct tp_vm {
     tp_obj ex;
     char chars[256][2];
     int cur;
-    // gc
+    /* gc*/
     _tp_list *white;
     _tp_list *grey;
     _tp_list *black;
@@ -152,16 +152,16 @@ typedef struct tp_meta {
     tp_obj (*get)(TP,tp_obj,tp_obj);
     void (*set)(TP,tp_obj,tp_obj,tp_obj);
     void (*free)(TP,tp_obj);
-//     tp_obj (*del)(TP,tp_obj,tp_obj);
-//     tp_obj (*has)(TP,tp_obj,tp_obj);
-//     tp_obj (*len)(TP,tp_obj);
+/*     tp_obj (*del)(TP,tp_obj,tp_obj);
+       tp_obj (*has)(TP,tp_obj,tp_obj);
+       tp_obj (*len)(TP,tp_obj);*/
 } tp_meta;
 typedef struct _tp_data {
     int gci;
     tp_meta meta;
 } _tp_data;
 
-// NOTE: these are the few out of namespace items for convenience
+/* NOTE: these are the few out of namespace items for convenience*/
 #define True tp_number(1)
 #define False tp_number(0)
 #define STR(v) ((tp_str(tp,(v))).string.val)
@@ -185,7 +185,7 @@ void tp_grey(TP,tp_obj);
 }
 #define __params (tp->params)
 #define TP_OBJ() (tp_get(tp,__params,None))
-inline static tp_obj tp_type(TP,int t,tp_obj v) {
+__inline__ static tp_obj tp_type(TP,int t,tp_obj v) {
     if (v.type != t) { tp_raise(None,"_tp_type(%d,%s)",t,STR(v)); }
     return v;
 }
@@ -200,25 +200,25 @@ inline static tp_obj tp_type(TP,int t,tp_obj v) {
 #define TP_END \
     }
 
-inline static int _tp_min(int a, int b) { return (a<b?a:b); }
-inline static int _tp_max(int a, int b) { return (a>b?a:b); }
-inline static int _tp_sign(tp_num v) { return (v<0?-1:(v>0?1:0)); }
+__inline__ static int _tp_min(int a, int b) { return (a<b?a:b); }
+__inline__ static int _tp_max(int a, int b) { return (a>b?a:b); }
+__inline__ static int _tp_sign(tp_num v) { return (v<0?-1:(v>0?1:0)); }
 
-inline static tp_obj tp_number(tp_num v) { 
+__inline__ static tp_obj tp_number(tp_num v) {
     tp_obj val = {TP_NUMBER};
     val.number.val = v;
-    return val; 
+    return val;
 }
 
-inline static tp_obj tp_string(char *v) {
+__inline__ static tp_obj tp_string(char *v) {
     tp_obj val;
     tp_string_ s = {TP_STRING, 0, v, 0};
     s.len = strlen(v);
     val.string = s;
-    return val; 
+    return val;
 }
 
-inline static tp_obj tp_string_n(char *v,int n) {
+__inline__ static tp_obj tp_string_n(char *v,int n) {
     tp_obj val;
     tp_string_ s = {TP_STRING, 0,v,n};
     val.string = s;

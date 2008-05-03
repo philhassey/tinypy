@@ -11,3 +11,5 @@
     from x import y
 * trimmed off 1064 bytes by changing all the tokens from dicts to
     a Token class in tokenize, parse, encode modules
+* applied patch by Seth Lemons to support /* */ comment stripping in
+    setup.py and get tinypy up to -std=c89 spec

@@ -1,9 +1,9 @@
-// tp_obj tp_track(TP,tp_obj v) { return v; }
-// void tp_grey(TP,tp_obj v) { }
-// void tp_full(TP) { }
-// void tp_gc_init(TP) { }
-// void tp_gc_deinit(TP) { }
-// void tp_delete(TP,tp_obj v) { }
+/* tp_obj tp_track(TP,tp_obj v) { return v; }
+   void tp_grey(TP,tp_obj v) { }
+   void tp_full(TP) { }
+   void tp_gc_init(TP) { }
+   void tp_gc_deinit(TP) { }
+   void tp_delete(TP,tp_obj v) { }*/
 
 void tp_grey(TP,tp_obj v) {
     if (v.type < TP_STRING || (!v.gci.data) || *v.gci.data) { return; }
@@ -43,8 +43,8 @@ void tp_reset(TP) {
     for (n=0; n<tp->black->len; n++) {
         *tp->black->items[n].gci.data = 0;
     }
-    tmp = tp->white; 
-    tp->white = tp->black; 
+    tmp = tp->white;
+    tp->white = tp->black;
     tp->black = tmp;
 }
 
@@ -93,8 +93,8 @@ void tp_collect(TP) {
         tp_obj r = tp->white->items[n];
         if (*r.gci.data) { continue; }
         if (r.type == TP_STRING) {
-            //this can't be moved into tp_delete, because tp_delete is
-            // also used by tp_track_s to delete redundant strings
+            /*this can't be moved into tp_delete, because tp_delete is
+               also used by tp_track_s to delete redundant strings*/
             _tp_dict_del(tp,tp->strings,r,"tp_collect");
         }
         tp_delete(tp,r);
@@ -105,8 +105,8 @@ void tp_collect(TP) {
 
 void _tp_gcinc(TP) {
     tp_obj v;
-    if (!tp->grey->len) { 
-        return; 
+    if (!tp->grey->len) {
+        return;
     }
     v = _tp_list_pop(tp,tp->grey,tp->grey->len-1,"_tp_gcinc");
     tp_follow(tp,v);
@@ -148,5 +148,5 @@ tp_obj tp_track(TP,tp_obj v) {
     return v;
 }
 
-//
+/**/
 

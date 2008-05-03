@@ -88,7 +88,7 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
             } else if (strcmp("extend",STR(k)) == 0) {
                 return tp_method(tp,self,tp_extend);
             } else if (strcmp("*",STR(k)) == 0) {
-                tp_params_v(tp,1,self); 
+                tp_params_v(tp,1,self);
                 r = tp_copy(tp);
                 self.list.val->len=0;
                 return r;
@@ -197,9 +197,9 @@ tp_obj tp_add(TP,tp_obj a, tp_obj b) {
         return tp_track(tp,r);
     } else if (a.type == TP_LIST && a.type == b.type) {
         tp_obj r;
-        tp_params_v(tp,1,a); 
+        tp_params_v(tp,1,a);
         r = tp_copy(tp);
-        tp_params_v(tp,2,r,b); 
+        tp_params_v(tp,2,r,b);
         tp_extend(tp);
         return r;
     }
@@ -275,4 +275,4 @@ TP_OP(tp_div,a/b);
 TP_OP(tp_pow,pow(a,b));
 
 
-//
+/**/

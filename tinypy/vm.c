@@ -1,7 +1,7 @@
 
 tp_vm *_tp_init(void) {
     int i;
-    tp_vm *tp = tp_malloc(sizeof(tp_vm)); 
+    tp_vm *tp = tp_malloc(sizeof(tp_vm));
     tp->cur = 0;
     tp->jmp = 0;
     tp->ex = None;
@@ -37,14 +37,14 @@ void tp_deinit(TP) {
 }
 
 
-// tp_frame_ 
+/* tp_frame_*/
 void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
     tp_frame_ f;
     f.globals = globals;
     f.codes = codes;
     f.cur = f.codes;
     f.jmp = 0;
-//     fprintf(stderr,"tp->cur: %d\n",tp->cur);
+/*     fprintf(stderr,"tp->cur: %d\n",tp->cur);*/
     f.regs = (tp->cur <= 0?tp->regs:tp->frames[tp->cur].regs+tp->frames[tp->cur].cregs);
     f.ret_dest = ret_dest;
     f.lineno = 0;
@@ -52,10 +52,10 @@ void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
     f.name = tp_string("?");
     f.fname = tp_string("?");
     f.cregs = 0;
-//     return f;
+/*     return f;*/
     if (f.regs+256 >= tp->regs+TP_REGS || tp->cur >= TP_FRAMES-1) { tp_raise(,"tp_frame: stack overflow %d",tp->cur); }
     tp->cur += 1;
-    tp->frames[tp->cur] = f; 
+    tp->frames[tp->cur] = f;
 }
 
 void _tp_raise(TP,tp_obj e) {
@@ -125,8 +125,8 @@ void _tp_call(TP,tp_obj *dest, tp_obj fnc, tp_obj params) {
 void tp_return(TP, tp_obj v) {
     tp_obj *dest = tp->frames[tp->cur].ret_dest;
     if (dest) { *dest = v; tp_grey(tp,v); }
-//     memset(tp->frames[tp->cur].regs,0,TP_REGS_PER_FRAME*sizeof(tp_obj));
-//     fprintf(stderr,"regs:%d\n",(tp->frames[tp->cur].cregs+1));
+/*     memset(tp->frames[tp->cur].regs,0,TP_REGS_PER_FRAME*sizeof(tp_obj));
+       fprintf(stderr,"regs:%d\n",(tp->frames[tp->cur].cregs+1));*/
     memset(tp->frames[tp->cur].regs,0,tp->frames[tp->cur].cregs*sizeof(tp_obj));
     tp->cur -= 1;
 }
@@ -140,12 +140,12 @@ enum {
     TP_ITOTAL
 };
 
-// char *tp_strings[TP_ITOTAL] = {
-//     "EOF","ADD","SUB","MUL","DIV","POW","AND","OR","CMP","GET","SET","NUM",
-//     "STR","GGET","GSET","MOVE","DEF","PASS","JUMP","CALL","RETURN","IF","DEBUG",
-//     "EQ","LE","LT","DICT","LIST","NONE","LEN","LINE","PARAMS","IGET","FILE",
-//     "NAME","NE","HAS","RAISE","SETJMP","MOD","LSH","RSH","ITER","DEL","REGS",
-// };
+/* char *tp_strings[TP_ITOTAL] = {
+       "EOF","ADD","SUB","MUL","DIV","POW","AND","OR","CMP","GET","SET","NUM",
+       "STR","GGET","GSET","MOVE","DEF","PASS","JUMP","CALL","RETURN","IF","DEBUG",
+       "EQ","LE","LT","DICT","LIST","NONE","LEN","LINE","PARAMS","IGET","FILE",
+       "NAME","NE","HAS","RAISE","SETJMP","MOD","LSH","RSH","ITER","DEL","REGS",
+   };*/
 
 #define VA ((int)e.regs.a)
 #define VB ((int)e.regs.b)
@@ -164,8 +164,8 @@ int tp_step(TP) {
     tp_code *cur = f->cur;
     while(1) {
     tp_code e = *cur;
-//     fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur-f->codes,tp_strings[e.i],VA,VB,VC);
-//     int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,STR(regs[i])); }
+/*     fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur-f->codes,tp_strings[e.i],VA,VB,VC);
+       int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,STR(regs[i])); }*/
     switch (e.i) {
         case TP_IEOF: tp_return(tp,None); SR(0); break;
         case TP_IADD: RA = tp_add(tp,RB,RC); break;
@@ -231,7 +231,7 @@ int tp_step(TP) {
         case TP_INONE: RA = None; break;
         case TP_ILINE:
             f->line = tp_string_n((*(cur+1)).string.val,VA*4-1);
-//             fprintf(stderr,"%7d: %s\n",UVBC,f->line.string.val);
+/*             fprintf(stderr,"%7d: %s\n",UVBC,f->line.string.val);*/
             cur += VA; f->lineno = UVBC;
             break;
         case TP_IFILE: f->fname = RA; break;
@@ -281,12 +281,12 @@ tp_obj tp_import(TP,char *fname, char *name, void *codes) {
     g = tp_dict(tp);
     tp_set(tp,g,tp_string("__name__"),tp_string(name));
     tp_set(tp,g,tp_string("__code__"),code);
-    tp_set(tp,g,tp_string("__dict__"),g); 
+    tp_set(tp,g,tp_string("__dict__"),g);
     tp_frame(tp,g,codes,0);
     tp_set(tp,tp->modules,tp_string(name),g);
-    
+
     if (!tp->jmp) { tp_run(tp,tp->cur); }
-    
+
     return g;
 }
 
@@ -366,6 +366,6 @@ tp_vm *tp_init(int argc, char *argv[]) {
     tp_compiler(tp);
     return tp;
 }
-    
 
-//
+
+/**/
