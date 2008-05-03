@@ -680,6 +680,15 @@ test()
     t_render(['v="OK"',"from tmp1 import v\nprint(v)"],"OK")
     t_render(['x="X";y="K"',"x = 'O'\nfrom tmp1 import y\nprint(x+y)"],"OK")
 
+    t_render("""
+def test(**e):
+    print(e['x'])
+test(x='OK')
+""","OK")
+
+    # test register allocator
+    s = "def f():pass\n"+("f()\n"*256)+"print('OK')"
+    t_render(s,"OK")
 
 ################################################################################
 

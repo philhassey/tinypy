@@ -13,27 +13,22 @@ class DState:
         self.stack,self.out,self._scopei,self.tstack,self._tagi,self.data = [],[('tag','EOF')],0,[],0,{}
         self.error = False
     def begin(self,gbl=False):
-        if len(self.stack): self.stack.append((self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs))
+        if len(self.stack): self.stack.append((self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs,self.tmpc))
         else: self.stack.append(None)
-        self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs = [],{},{},0,0,str(self._scopei),gbl,-1,[],['regs']
+        self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs,self.tmpc = [],{},{},0,0,str(self._scopei),gbl,-1,[],['regs'],0
         self._scopei += 1
         insert(self.cregs)
     def end(self):
         self.cregs.append(self.mreg)
         code(EOF)
-        #leaks = []
-        #for r in range(0,256):
-            #if r in self.r2n:
-                #if self.r2n[r][0] == '$':
-                    #leaks.append(r)
-        #if leaks:
-            #print("================================")
-            #print(self.code)
-            #print(str(len(leaks))+' register leaks')
-            #print("================================")
-        #assert(len(leaks) == 0)
+        
+        # This next line forces the encoder to
+        # throw an exception if any tmp regs 
+        # were leaked within the frame
+        assert(self.tmpc == 0) #REG
+        
         if len(self.stack) > 1:
-            self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs = self.stack.pop()
+            self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs,self.tmpc = self.stack.pop()
         else: self.stack.pop()
 
 
@@ -152,6 +147,7 @@ def get_tmps(t):
     for r in regs:
         set_reg(r,"$"+str(D._tmpi))
         D._tmpi += 1
+    D.tmpc += t #REG
     return regs
 def alloc(t):
     s = ''.join(["01"[r in D.r2n] for r in range(0,min(256,D.mreg+t))])
@@ -172,14 +168,15 @@ def get_reg(n):
     if n not in D.n2r:
         set_reg(alloc(1),n)
     return D.n2r[n]
-def get_clean_reg(n):
-    if n in D.n2r: raise
-    set_reg(D.mreg,n)
-    return D.n2r[n]
+#def get_clean_reg(n):
+    #if n in D.n2r: raise
+    #set_reg(D.mreg,n)
+    #return D.n2r[n]
 def set_reg(r,n):
     D.n2r[n] = r; D.r2n[r] = n
     D.mreg = max(D.mreg,r+1)
 def free_reg(r):
+    if is_tmp(r): D.tmpc -= 1
     n = D.r2n[r]; del D.r2n[r]; del D.n2r[n]
 
 def imanage(orig,fnc):
@@ -208,6 +205,8 @@ def ss_infix(ss,i,tb,tc,r=None):
     tag(t,'else')
     r = do(tc,r)
     tag(t,'end')
+    free_tmp(r2) #REG
+    free_tmp(ss) #REG
     return r
 
 def _do_none(r=None):
@@ -285,26 +284,31 @@ def do_set_ctx(k,v):
             for kk in k.items:
                 vv = v.items[n]
                 tmp = get_tmp(); tmps.append(tmp)
-                code(MOVE,tmp,do(vv))
+                r = do(vv)
+                code(MOVE,tmp,r)
+                free_tmp(r) #REG
                 n+=1
             n = 0
             for kk in k.items:
                 vv = v.items[n]
                 tmp = tmps[n]
-                do_set_ctx(kk,Token(vv.pos,'reg',tmp))
+                free_tmp(do_set_ctx(kk,Token(vv.pos,'reg',tmp))) #REG
                 n += 1
             return
 
         r = do(v); un_tmp(r)
         n, tmp = 0, Token(v.pos,'reg',r)
         for tt in k.items:
-            do_set_ctx(tt,Token(tmp.pos,'get',None,[tmp,Token(tmp.pos,'number',str(n))]))
+            free_tmp(do_set_ctx(tt,Token(tmp.pos,'get',None,[tmp,Token(tmp.pos,'number',str(n))]))) #REG
             n += 1
         free_reg(r)
         return
     r = do(k.items[0])
     rr = do(v)
-    code(SET,r,do(k.items[1]),rr)
+    tmp = do(k.items[1])
+    code(SET,r,tmp,rr)
+    free_tmp(r) #REG
+    free_tmp(tmp) #REG
     return rr
 
 def manage_seq(i,a,items,sav=0):
@@ -349,16 +353,16 @@ def do_from(t):
         mod]))
     item = t.items[1]
     if item.val == '*':
-        do(Token(t.pos,'call',None,[
+        free_tmp(do(Token(t.pos,'call',None,[
             Token(t.pos,'name','merge'),
             Token(t.pos,'name','__dict__'),
-            Token(t.pos,'reg',v)]))
+            Token(t.pos,'reg',v)]))) #REG
     else:
         item.type = 'string'
-        do_set_ctx(
+        free_tmp(do_set_ctx(
             Token(t.pos,'get',None,[ Token(t.pos,'name','__dict__'),item]),
             Token(t.pos,'get',None,[ Token(t.pos,'reg',v),item])
-            )
+            )) #REG
 
         
 def do_globals(t):
@@ -368,7 +372,9 @@ def do_globals(t):
 def do_del(tt):
     for t in tt.items:
         r = do(t.items[0])
-        code(DEL,r,do(t.items[1]))
+        r2 = do(t.items[1])
+        code(DEL,r,r2)
+        free_tmp(r); free_tmp(r2) #REG
 
 def do_call(t,r=None):
     r = get_tmp(r)
@@ -378,12 +384,23 @@ def do_call(t,r=None):
     e = None
     if len(b) != 0 or d != None:
         e = do(Token(t.pos,'dict',None,[])); un_tmp(e);
-        for p in b: code(SET,e,do(p.items[0]),do(p.items[1]))
-        if d: do(Token(t.pos,'call',None,[Token(t.pos,'name','merge'),Token(t.pos,'reg',e),d.items[0]]))
+        for p in b:
+            p.items[0].type = 'string'
+            t1,t2 = do(p.items[0]),do(p.items[1])
+            code(SET,e,t1,t2)
+            free_tmp(t1); free_tmp(t2) #REG
+        if d: free_tmp(do(Token(t.pos,'call',None,[Token(t.pos,'name','merge'),Token(t.pos,'reg',e),d.items[0]]))) #REG
     manage_seq(PARAMS,r,a)
-    if c != None: code(SET,r,_do_string('*'),do(c.items[0]))
-    if e != None: code(SET,r,_do_none(),e)
+    if c != None:
+        t1,t2 = _do_string('*'),do(c.items[0])
+        code(SET,r,t1,t2)
+        free_tmp(t1); free_tmp(t2) #REG
+    if e != None:
+        t1 = _do_none()
+        code(SET,r,t1,e)
+        free_tmp(t1) #REG
     code(CALL,r,fnc,r)
+    free_tmp(fnc) #REG
     return r
 
 def do_name(t,r=None):
@@ -413,18 +430,26 @@ def do_def(tok,kls=None):
     a,b,c,d = p_filter(items[1].items)
     for p in a:
         v = do_local(p)
-        code(GET,v,r,_do_none())
+        tmp = _do_none()
+        code(GET,v,r,tmp)
+        free_tmp(tmp) #REG
     for p in b:
         v = do_local(p.items[0])
         do(p.items[1],v)
-        code(IGET,v,r,_do_none())
+        tmp = _do_none()
+        code(IGET,v,r,tmp)
+        free_tmp(tmp) #REG
     if c != None:
         v = do_local(c.items[0])
-        code(GET,v,r,_do_string('*'))
+        tmp = _do_string('*')
+        code(GET,v,r,tmp)
+        free_tmp(tmp) #REG
     if d != None:
         e = do_local(d.items[0])
-        code(GET,e,r,_do_none())
-    do(items[2])
+        tmp = _do_none()
+        code(GET,e,r,tmp)
+        free_tmp(tmp) #REG
+    free_tmp(do(items[2])) #REG
     D.end()
 
     tag(t,'end')
@@ -450,7 +475,9 @@ def do_class(t):
         parent = items[0].items[1].val
 
     kls = do(Token(t.pos,'dict',0,[]))
-    code(GSET,_do_string(name),kls)
+    ts = _do_string(name)
+    code(GSET,ts,kls)
+    free_tmp(ts) #REG
 
     init,_new = False,[]
     if parent:
@@ -492,21 +519,29 @@ def do_class(t):
     slf = do_local(Token(tok.pos,'name','self'))
     code(DICT,slf,0,0)
 
-    do(Token(tok.pos,'call',None,[
+    free_tmp(do(Token(tok.pos,'call',None,[
         Token(tok.pos,'get',None,[
             Token(tok.pos,'name',name),
             Token(tok.pos,'string','__new__')]),
-        Token(tok.pos,'name','self')]))
+        Token(tok.pos,'name','self')]))) #REG
 
     if init:
         tmp = get_tmp()
-        code(GET,tmp,slf,_do_string('__init__'))
-        code(CALL,get_tmp(),tmp,params)
+        t3 = _do_string('__init__')
+        code(GET,tmp,slf,t3)
+        t4 = get_tmp()
+        code(CALL,t4,tmp,params)
+        free_tmp(tmp) #REG
+        free_tmp(t3) #REG
+        free_tmp(t4) #REG
     code(RETURN,slf)
 
     D.end()
     tag(t,'end')
-    code(SET,kls,_do_string('__call__'),rf)
+    ts = _do_string('__call__')
+    code(SET,kls,ts,rf)
+    free_tmp(kls) #REG
+    free_tmp(ts) #REG
 
 
 
@@ -518,8 +553,9 @@ def do_while(t):
     tag(t,'continue')
     r = do(items[0])
     code(IF,r)
+    free_tmp(r) #REG
     jump(t,'end')
-    do(items[1])
+    free_tmp(do(items[1])) #REG
     jump(t,'begin')
     tag(t,'break')
     tag(t,'end')
@@ -534,10 +570,11 @@ def do_for(tok):
 
     t = stack_tag(); tag(t,'loop'); tag(t,'continue')
     code(ITER,reg,itr,i); jump(t,'end')
-    do(items[2])
+    free_tmp(do(items[2])) #REG
     jump(t,'loop')
     tag(t,'break'); tag(t,'end'); pop_tag()
 
+    free_tmp(itr) #REG
     free_tmp(i)
 
 def do_comp(t,r=None):
@@ -560,9 +597,9 @@ def do_if(t):
         if tt.type == 'elif':
             a = do(tt.items[0]); code(IF,a); free_tmp(a);
             jump(t,n+1)
-            do(tt.items[1])
+            free_tmp(do(tt.items[1])) #REG
         elif tt.type == 'else':
-            do(tt.items[0])
+            free_tmp(do(tt.items[0])) #REG
         else:
             raise
         jump(t,'end')
@@ -574,10 +611,10 @@ def do_try(t):
     items = t.items
     t = get_tag()
     setjmp(t,'except')
-    do(items[0])
+    free_tmp(do(items[0])) #REG
     jump(t,'end')
     tag(t,'except')
-    do(items[1].items[1])
+    free_tmp(do(items[1].items[1])) #REG
     tag(t,'end')
 
 def do_return(t):
@@ -620,7 +657,7 @@ def do_info(name='?'):
     code(NAME,free_tmp(_do_string(name)))
 def do_module(t):
     do_info()
-    do(t.items[0])
+    free_tmp(do(t.items[0])) #REG
 def do_reg(t,r=None): return t.val
 
 fmap = {

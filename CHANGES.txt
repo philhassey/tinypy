@@ -13,3 +13,5 @@
     a Token class in tokenize, parse, encode modules
 * applied patch by Seth Lemons to support /* */ comment stripping in
     setup.py and get tinypy up to -std=c89 spec
+* cleaned up encode.py so that registers are no longer leaked
+    added assert after each frame to check that this is the case

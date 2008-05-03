@@ -3,7 +3,9 @@
 
 #include <setjmp.h>
 #include <sys/stat.h>
+#ifndef __USE_ISOC99
 #define __USE_ISOC99
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
