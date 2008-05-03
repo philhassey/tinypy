@@ -3,11 +3,24 @@
 
 #include <setjmp.h>
 #include <sys/stat.h>
+#define __USE_ISOC99
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+
+#ifdef __GNUC__
+#define tp_inline __inline__
+#endif
+
+#ifdef _MSC_VER
+#define tp_inline __inline
+#endif
+
+#ifndef tp_inline
+#error "Unsuported compiler"
+#endif
 
 #define tp_malloc(x) calloc((x),1)
 #define tp_realloc(x,y) realloc(x,y)
@@ -185,7 +198,7 @@ void tp_grey(TP,tp_obj);
 }
 #define __params (tp->params)
 #define TP_OBJ() (tp_get(tp,__params,None))
-__inline__ static tp_obj tp_type(TP,int t,tp_obj v) {
+tp_inline static tp_obj tp_type(TP,int t,tp_obj v) {
     if (v.type != t) { tp_raise(None,"_tp_type(%d,%s)",t,STR(v)); }
     return v;
 }
@@ -200,17 +213,17 @@ __inline__ static tp_obj tp_type(TP,int t,tp_obj v) {
 #define TP_END \
     }
 
-__inline__ static int _tp_min(int a, int b) { return (a<b?a:b); }
-__inline__ static int _tp_max(int a, int b) { return (a>b?a:b); }
-__inline__ static int _tp_sign(tp_num v) { return (v<0?-1:(v>0?1:0)); }
+tp_inline static int _tp_min(int a, int b) { return (a<b?a:b); }
+tp_inline static int _tp_max(int a, int b) { return (a>b?a:b); }
+tp_inline static int _tp_sign(tp_num v) { return (v<0?-1:(v>0?1:0)); }
 
-__inline__ static tp_obj tp_number(tp_num v) {
+tp_inline static tp_obj tp_number(tp_num v) {
     tp_obj val = {TP_NUMBER};
     val.number.val = v;
     return val;
 }
 
-__inline__ static tp_obj tp_string(char *v) {
+tp_inline static tp_obj tp_string(char *v) {
     tp_obj val;
     tp_string_ s = {TP_STRING, 0, v, 0};
     s.len = strlen(v);
@@ -218,7 +231,7 @@ __inline__ static tp_obj tp_string(char *v) {
     return val;
 }
 
-__inline__ static tp_obj tp_string_n(char *v,int n) {
+tp_inline static tp_obj tp_string_n(char *v,int n) {
     tp_obj val;
     tp_string_ s = {TP_STRING, 0,v,n};
     val.string = s;
