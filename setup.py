@@ -183,7 +183,9 @@ def build_gcc():
         mods.append('tests')
         do_cmd("gcc -std=c89 -Wall -g vmmain.c $FLAGS -lm -o vm")
         do_cmd('python tests.py $SYS')
-    for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
+        for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
+    else:
+        for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
     if TEST:
         do_cmd('$VM tests.tpc $SYS')
         for mod in mods: do_cmd('$VM py2bc.tpc %s.py %s.tpc'%(mod,mod))
