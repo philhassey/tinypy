@@ -21,6 +21,17 @@ class DState:
     def end(self):
         self.cregs.append(self.mreg)
         code(EOF)
+        #leaks = []
+        #for r in range(0,256):
+            #if r in self.r2n:
+                #if self.r2n[r][0] == '$':
+                    #leaks.append(r)
+        #if leaks:
+            #print("================================")
+            #print(self.code)
+            #print(str(len(leaks))+' register leaks')
+            #print("================================")
+        #assert(len(leaks) == 0)
         if len(self.stack) > 1:
             self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs = self.stack.pop()
         else: self.stack.pop()
@@ -397,7 +408,7 @@ def do_def(tok,kls=None):
 
     D.begin()
     setpos(tok.pos)
-    r = do_local(Token(0,0,0,'__params'))
+    r = do_local(Token(tok.pos,'name','__params'))
     do_info(items[0].val)
     a,b,c,d = p_filter(items[1].items)
     for p in a:
