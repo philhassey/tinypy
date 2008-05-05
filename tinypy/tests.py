@@ -169,6 +169,12 @@ if __name__ == '__main__':
 
 ################################################################################
 
+def showerror(cmd, ss, ex, res):
+    print(cmd)
+    print("ss : '" + str(ss) + "'")
+    print("ex : '" + str(ex) + "'")
+    print("res: '" + str(res) + "'")
+
 def t_render(ss,ex,exact=True):
     import tokenize, parse, encode
         
@@ -183,12 +189,16 @@ def t_render(ss,ex,exact=True):
         f = save(fname,r)
         n += 1
     system_rm('tmp.txt')
-    system(VM+fname+' > tmp.txt')
+    cmd = VM + fname + " > tmp.txt"
+    system(cmd)
     res = load(TMP).strip()
     #print(ss,ex,res)
-    if exact: assert(res == ex)
-    else: assert(ex in res)
-
+    if exact:
+        if res != ex: showerror(cmd, ss, ex, res)
+        assert(res == ex)
+    else: 
+        if ex not in res: showerror(cmd, ss, ex, res)
+        assert(ex in res)
 
 def test_range():
     t_render("""print(str(range(4))[:5])""","<list")
