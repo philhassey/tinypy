@@ -3,11 +3,11 @@ tp_obj tp_print(TP) {
     tp_obj e;
     TP_LOOP(e)
         if (n) { printf(" "); }
-        printf("%s",STR(e));
+        printf("%s",TP_CSTR(e));
         n += 1;
     TP_END;
     printf("\n");
-    return None;
+    return tp_None;
 }
 
 tp_obj tp_bind(TP) {
@@ -42,7 +42,7 @@ tp_obj tp_copy(TP) {
     } else if (type == TP_DICT) {
         return _tp_dict_copy(tp,r);
     }
-    tp_raise(None,"tp_copy(%s)",STR(r));
+    tp_raise(tp_None,"tp_copy(%s)",TP_CSTR(r));
 }
 
 
@@ -54,14 +54,14 @@ tp_obj tp_len_(TP) {
 
 tp_obj tp_assert(TP) {
     int a = TP_NUM();
-    if (a) { return None; }
-    tp_raise(None,"%s","assert failed");
+    if (a) { return tp_None; }
+    tp_raise(tp_None,"%s","assert failed");
 }
 
 tp_obj tp_range(TP) {
     int a,b,c,i;
     tp_obj r = tp_list(tp);
-    switch (__params.list.val->len) {
+    switch (tp->params.list.val->len) {
         case 1: a = 0; b = TP_NUM(); c = 1; break;
         case 2:
         case 3: a = TP_NUM(); b = TP_NUM(); c = TP_DEFAULT(tp_number(1)).number.val; break;
@@ -89,7 +89,7 @@ tp_obj tp_istype(TP) {
     if (strcmp("list",t) == 0) { return tp_number(v.type == TP_LIST); }
     if (strcmp("dict",t) == 0) { return tp_number(v.type == TP_DICT); }
     if (strcmp("number",t) == 0) { return tp_number(v.type == TP_NUMBER); }
-    tp_raise(None,"is_type(%s,%s)",STR(v),t);
+    tp_raise(tp_None,"is_type(%s,%s)",TP_CSTR(v),t);
 }
 
 
@@ -99,10 +99,10 @@ tp_obj tp_float(TP) {
     int type = v.type;
     if (type == TP_NUMBER) { return v; }
     if (type == TP_STRING) {
-        if (strchr(STR(v),'.')) { return tp_number(atof(STR(v))); }
-        return(tp_number(strtol(STR(v),0,ord)));
+        if (strchr(TP_CSTR(v),'.')) { return tp_number(atof(TP_CSTR(v))); }
+        return(tp_number(strtol(TP_CSTR(v),0,ord)));
     }
-    tp_raise(None,"tp_float(%s)",STR(v));
+    tp_raise(tp_None,"tp_float(%s)",TP_CSTR(v));
 }
 
 
@@ -111,10 +111,10 @@ tp_obj tp_save(TP) {
     tp_obj v = TP_OBJ();
     FILE *f;
     f = fopen(fname,"wb");
-    if (!f) { tp_raise(None,"tp_save(%s,...)",fname); }
+    if (!f) { tp_raise(tp_None,"tp_save(%s,...)",fname); }
     fwrite(v.string.val,v.string.len,1,f);
     fclose(f);
-    return None;
+    return tp_None;
 }
 
 tp_obj tp_load(TP) {
@@ -128,7 +128,7 @@ tp_obj tp_load(TP) {
     l = stbuf.st_size;
     f = fopen(fname,"rb");
     if (!f) {
-        tp_raise(None,"tp_load(%s)",fname);
+        tp_raise(tp_None,"tp_load(%s)",fname);
     }
     r = tp_string_t(tp,l);
     s = r.string.val;
@@ -169,5 +169,5 @@ tp_obj tp_mtime(TP) {
     char *s = TP_STR();
     struct stat stbuf;
     if (!stat(s,&stbuf)) { return tp_number(stbuf.st_mtime); }
-    tp_raise(None,"tp_mtime(%s)",s);
+    tp_raise(tp_None,"tp_mtime(%s)",s);
 }

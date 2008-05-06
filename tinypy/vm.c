@@ -4,20 +4,20 @@ tp_vm *_tp_init(void) {
     tp_vm *tp = tp_malloc(sizeof(tp_vm));
     tp->cur = 0;
     tp->jmp = 0;
-    tp->ex = None;
+    tp->ex = tp_None;
     tp->root = tp_list(0);
     for (i=0; i<256; i++) { tp->chars[i][0]=i; }
     tp_gc_init(tp);
     tp->_regs = tp_list(tp);
-    for (i=0; i<TP_REGS; i++) { tp_set(tp,tp->_regs,None,None); }
+    for (i=0; i<TP_REGS; i++) { tp_set(tp,tp->_regs,tp_None,tp_None); }
     tp->builtins = tp_dict(tp);
     tp->modules = tp_dict(tp);
     tp->_params = tp_list(tp);
-    for (i=0; i<TP_FRAMES; i++) { tp_set(tp,tp->_params,None,tp_list(tp)); }
-    tp_set(tp,tp->root,None,tp->builtins);
-    tp_set(tp,tp->root,None,tp->modules);
-    tp_set(tp,tp->root,None,tp->_regs);
-    tp_set(tp,tp->root,None,tp->_params);
+    for (i=0; i<TP_FRAMES; i++) { tp_set(tp,tp->_params,tp_None,tp_list(tp)); }
+    tp_set(tp,tp->root,tp_None,tp->builtins);
+    tp_set(tp,tp->root,tp_None,tp->modules);
+    tp_set(tp,tp->root,tp_None,tp->_regs);
+    tp_set(tp,tp->root,tp_None,tp->_params);
     tp_set(tp,tp->builtins,tp_string("MODULES"),tp->modules);
     tp_set(tp,tp->modules,tp_string("BUILTINS"),tp->builtins);
     tp_set(tp,tp->builtins,tp_string("BUILTINS"),tp->builtins);
@@ -60,7 +60,7 @@ void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
 
 void _tp_raise(TP,tp_obj e) {
     if (!tp || !tp->jmp) {
-        printf("\nException:\n%s\n",STR(e));
+        printf("\nException:\n%s\n",TP_CSTR(e));
         exit(-1);
         return;
     }
@@ -75,9 +75,10 @@ void tp_print_stack(TP) {
     for (i=0; i<=tp->cur; i++) {
         if (!tp->frames[i].lineno) { continue; }
         printf("File \"%s\", line %d, in %s\n  %s\n",
-            STR(tp->frames[i].fname),tp->frames[i].lineno,STR(tp->frames[i].name),STR(tp->frames[i].line));
+            TP_CSTR(tp->frames[i].fname),tp->frames[i].lineno,
+            TP_CSTR(tp->frames[i].name),TP_CSTR(tp->frames[i].line));
     }
-    printf("\nException:\n%s\n",STR(tp->ex));
+    printf("\nException:\n%s\n",TP_CSTR(tp->ex));
 }
 
 
@@ -118,7 +119,7 @@ void _tp_call(TP,tp_obj *dest, tp_obj fnc, tp_obj params) {
         return;
     }
     tp_params_v(tp,1,fnc); tp_print(tp);
-    tp_raise(,"tp_call: %s is not callable",STR(fnc));
+    tp_raise(,"tp_call: %s is not callable",TP_CSTR(fnc));
 }
 
 
@@ -165,9 +166,9 @@ int tp_step(TP) {
     while(1) {
     tp_code e = *cur;
 /*     fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur-f->codes,tp_strings[e.i],VA,VB,VC);
-       int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,STR(regs[i])); }*/
+       int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,TP_CSTR(regs[i])); }*/
     switch (e.i) {
-        case TP_IEOF: tp_return(tp,None); SR(0); break;
+        case TP_IEOF: tp_return(tp,tp_None); SR(0); break;
         case TP_IADD: RA = tp_add(tp,RB,RC); break;
         case TP_ISUB: RA = tp_sub(tp,RB,RC); break;
         case TP_IMUL: RA = tp_mul(tp,RB,RC); break;
@@ -228,7 +229,7 @@ int tp_step(TP) {
         case TP_IDEBUG:
             tp_params_v(tp,3,tp_string("DEBUG:"),tp_number(VA),RA); tp_print(tp);
             break;
-        case TP_INONE: RA = None; break;
+        case TP_INONE: RA = tp_None; break;
         case TP_ILINE:
             f->line = tp_string_n((*(cur+1)).string.val,VA*4-1);
 /*             fprintf(stderr,"%7d: %s\n",UVBC,f->line.string.val);*/
@@ -254,7 +255,7 @@ void tp_run(TP,int cur) {
 
 tp_obj tp_call(TP, char *mod, char *fnc, tp_obj params) {
     tp_obj tmp;
-    tp_obj r = None;
+    tp_obj r = tp_None;
     tmp = tp_get(tp,tp->modules,tp_string(mod));
     tmp = tp_get(tp,tmp,tp_string(fnc));
     _tp_call(tp,&r,tmp,params);
@@ -263,7 +264,7 @@ tp_obj tp_call(TP, char *mod, char *fnc, tp_obj params) {
 }
 
 tp_obj tp_import(TP,char *fname, char *name, void *codes) {
-    tp_obj code = None;
+    tp_obj code = tp_None;
     tp_obj g;
 
     if (!((fname && strstr(fname,".tpc")) || codes)) {
@@ -296,7 +297,7 @@ tp_obj tp_exec_(TP) {
     tp_obj code = TP_OBJ();
     tp_obj globals = TP_OBJ();
     tp_frame(tp,globals,(void*)code.string.val,0);
-    return None;
+    return tp_None;
 }
 
 
@@ -309,8 +310,8 @@ tp_obj tp_import_(TP) {
         return tp_get(tp,tp->modules,mod);
     }
 
-    s = STR(mod);
-    r = tp_import(tp,STR(tp_add(tp,mod,tp_string(".tpc"))),s,0);
+    s = TP_CSTR(mod);
+    r = tp_import(tp,TP_CSTR(tp_add(tp,mod,tp_string(".tpc"))),s,0);
     return r;
 }
 
@@ -348,7 +349,7 @@ tp_obj tp_compile(TP, tp_obj text, tp_obj fname) {
 }
 
 tp_obj tp_exec(TP,tp_obj code, tp_obj globals) {
-    tp_obj r=None;
+    tp_obj r=tp_None;
     tp_frame(tp,globals,(void*)code.string.val,&r);
     tp_run(tp,tp->cur);
     return r;

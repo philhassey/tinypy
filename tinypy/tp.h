@@ -177,11 +177,11 @@ typedef struct _tp_data {
 } _tp_data;
 
 /* NOTE: these are the few out of namespace items for convenience*/
-#define True tp_number(1)
-#define False tp_number(0)
-#define STR(v) ((tp_str(tp,(v))).string.val)
+#define tp_True tp_number(1)
+#define tp_False tp_number(0)
+#define TP_CSTR(v) ((tp_str(tp,(v))).string.val)
 
-extern tp_obj None;
+extern tp_obj tp_None;
 
 void tp_set(TP,tp_obj,tp_obj,tp_obj);
 tp_obj tp_get(TP,tp_obj,tp_obj);
@@ -198,20 +198,19 @@ void tp_grey(TP,tp_obj);
     _tp_raise(tp,tp_printf(tp,fmt,__VA_ARGS__)); \
     return r; \
 }
-#define __params (tp->params)
-#define TP_OBJ() (tp_get(tp,__params,None))
+#define TP_OBJ() (tp_get(tp,tp->params,tp_None))
 tp_inline static tp_obj tp_type(TP,int t,tp_obj v) {
-    if (v.type != t) { tp_raise(None,"_tp_type(%d,%s)",t,STR(v)); }
+    if (v.type != t) { tp_raise(tp_None,"_tp_type(%d,%s)",t,TP_CSTR(v)); }
     return v;
 }
 #define TP_TYPE(t) tp_type(tp,t,TP_OBJ())
 #define TP_NUM() (TP_TYPE(TP_NUMBER).number.val)
-#define TP_STR() (STR(TP_TYPE(TP_STRING)))
-#define TP_DEFAULT(d) (__params.list.val->len?tp_get(tp,__params,None):(d))
+#define TP_STR() (TP_CSTR(TP_TYPE(TP_STRING)))
+#define TP_DEFAULT(d) (tp->params.list.val->len?tp_get(tp,tp->params,tp_None):(d))
 #define TP_LOOP(e) \
-    int __l = __params.list.val->len; \
+    int __l = tp->params.list.val->len; \
     int __i; for (__i=0; __i<__l; __i++) { \
-    (e) = _tp_list_get(tp,__params.list.val,__i,"TP_LOOP");
+    (e) = _tp_list_get(tp,tp->params.list.val,__i,"TP_LOOP");
 #define TP_END \
     }
 

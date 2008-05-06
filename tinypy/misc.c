@@ -25,15 +25,15 @@ tp_obj tp_fnc_new(TP,int t, void *v, tp_obj s, tp_obj g) {
 }
 
 tp_obj tp_def(TP,void *v, tp_obj g) {
-    return tp_fnc_new(tp,1,v,None,g);
+    return tp_fnc_new(tp,1,v,tp_None,g);
 }
 
 tp_obj tp_fnc(TP,tp_obj v(TP)) {
-    return tp_fnc_new(tp,0,v,None,None);
+    return tp_fnc_new(tp,0,v,tp_None,tp_None);
 }
 
 tp_obj tp_method(TP,tp_obj self,tp_obj v(TP)) {
-    return tp_fnc_new(tp,2,v,self,None);
+    return tp_fnc_new(tp,2,v,self,tp_None);
 }
 
 tp_obj tp_data(TP,void *v) {

@@ -91,7 +91,7 @@ tp_obj tp_str_index(TP) {
     tp_obj v = TP_OBJ();
     int n = _tp_str_index(s,v);
     if (n >= 0) { return tp_number(n); }
-    tp_raise(None,"tp_str_index(%s,%s)",s,v);
+    tp_raise(tp_None,"tp_str_index(%s,%s)",s,v);
 }
 
 tp_obj tp_str2(TP) {

@@ -134,6 +134,7 @@ def build_blob():
         for line in open_tinypy(fname,'r'):
             line = line.rstrip()
             if not len(line): continue
+            if line[0] == '/': continue
             if line[0] == ' ': continue
             if line[0] == '\t': continue
             if line[-1] != '{': continue

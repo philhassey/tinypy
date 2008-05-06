@@ -35,15 +35,15 @@ int tp_bool(TP,tp_obj v) {
 tp_obj tp_has(TP,tp_obj self, tp_obj k) {
     int type = self.type;
     if (type == TP_DICT) {
-        if (_tp_dict_find(tp,self.dict.val,k) != -1) { return True; }
-        return False;
+        if (_tp_dict_find(tp,self.dict.val,k) != -1) { return tp_True; }
+        return tp_False;
     } else if (type == TP_STRING && k.type == TP_STRING) {
-        char *p = strstr(STR(self),STR(k));
+        char *p = strstr(TP_CSTR(self),TP_CSTR(k));
         return tp_number(p != 0);
     } else if (type == TP_LIST) {
         return tp_number(_tp_list_find(tp,self.list.val,k)!=-1);
     }
-    tp_raise(None,"tp_has(%s,%s)",STR(self),STR(k));
+    tp_raise(tp_None,"tp_has(%s,%s)",TP_CSTR(self),TP_CSTR(k));
 }
 
 void tp_del(TP,tp_obj self, tp_obj k) {
@@ -52,7 +52,7 @@ void tp_del(TP,tp_obj self, tp_obj k) {
         _tp_dict_del(tp,self.dict.val,k,"tp_del");
         return;
     }
-    tp_raise(,"tp_del(%s,%s)",STR(self),STR(k));
+    tp_raise(,"tp_del(%s,%s)",TP_CSTR(self),TP_CSTR(k));
 }
 
 
@@ -62,7 +62,7 @@ tp_obj tp_iter(TP,tp_obj self, tp_obj k) {
     if (type == TP_DICT && k.type == TP_NUMBER) {
         return self.dict.val->items[_tp_dict_next(tp,self.dict.val)].key;
     }
-    tp_raise(None,"tp_iter(%s,%s)",STR(self),STR(k));
+    tp_raise(tp_None,"tp_iter(%s,%s)",TP_CSTR(self),TP_CSTR(k));
 }
 
 tp_obj tp_get(TP,tp_obj self, tp_obj k) {
@@ -77,17 +77,17 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
             n = (n<0?l+n:n);
             return _tp_list_get(tp,self.list.val,n,"tp_get");
         } else if (k.type == TP_STRING) {
-            if (strcmp("append",STR(k)) == 0) {
+            if (strcmp("append",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_append);
-            } else if (strcmp("pop",STR(k)) == 0) {
+            } else if (strcmp("pop",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_pop);
-            } else if (strcmp("index",STR(k)) == 0) {
+            } else if (strcmp("index",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_index);
-            } else if (strcmp("sort",STR(k)) == 0) {
+            } else if (strcmp("sort",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_sort);
-            } else if (strcmp("extend",STR(k)) == 0) {
+            } else if (strcmp("extend",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_extend);
-            } else if (strcmp("*",STR(k)) == 0) {
+            } else if (strcmp("*",TP_CSTR(k)) == 0) {
                 tp_params_v(tp,1,self);
                 r = tp_copy(tp);
                 self.list.val->len=0;
@@ -103,15 +103,15 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
             n = (n<0?l+n:n);
             if (n >= 0 && n < l) { return tp_string_n(tp->chars[(unsigned char)self.string.val[n]],1); }
         } else if (k.type == TP_STRING) {
-            if (strcmp("join",STR(k)) == 0) {
+            if (strcmp("join",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_join);
-            } else if (strcmp("split",STR(k)) == 0) {
+            } else if (strcmp("split",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_split);
-            } else if (strcmp("index",STR(k)) == 0) {
+            } else if (strcmp("index",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_str_index);
-            } else if (strcmp("strip",STR(k)) == 0) {
+            } else if (strcmp("strip",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_strip);
-            } else if (strcmp("replace",STR(k)) == 0) {
+            } else if (strcmp("replace",TP_CSTR(k)) == 0) {
                 return tp_method(tp,self,tp_replace);
             }
         }
@@ -126,11 +126,11 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
         tmp = tp_get(tp,k,tp_number(0));
         if (tmp.type == TP_NUMBER) { a = tmp.number.val; }
         else if(tmp.type == TP_NONE) { a = 0; }
-        else { tp_raise(None,"%s is not a number",STR(tmp)); }
+        else { tp_raise(tp_None,"%s is not a number",TP_CSTR(tmp)); }
         tmp = tp_get(tp,k,tp_number(1));
         if (tmp.type == TP_NUMBER) { b = tmp.number.val; }
         else if(tmp.type == TP_NONE) { b = l; }
-        else { tp_raise(None,"%s is not a number",STR(tmp)); }
+        else { tp_raise(tp_None,"%s is not a number",TP_CSTR(tmp)); }
         a = _tp_max(0,(a<0?l+a:a)); b = _tp_min(l,(b<0?l+b:b));
         if (type == TP_LIST) {
             return tp_list_n(tp,b-a,&self.list.val->items[a]);
@@ -144,7 +144,7 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
 
 
 
-    tp_raise(None,"tp_get(%s,%s)",STR(self),STR(k));
+    tp_raise(tp_None,"tp_get(%s,%s)",TP_CSTR(self),TP_CSTR(k));
 }
 
 int tp_iget(TP,tp_obj *r, tp_obj self, tp_obj k) {
@@ -174,7 +174,7 @@ void tp_set(TP,tp_obj self, tp_obj k, tp_obj v) {
             _tp_list_append(tp,self.list.val,v);
             return;
         } else if (k.type == TP_STRING) {
-            if (strcmp("*",STR(k)) == 0) {
+            if (strcmp("*",TP_CSTR(k)) == 0) {
                 tp_params_v(tp,2,self,v); tp_extend(tp);
                 return;
             }
@@ -183,7 +183,7 @@ void tp_set(TP,tp_obj self, tp_obj k, tp_obj v) {
         self.data.meta->set(tp,self,k,v);
         return;
     }
-    tp_raise(,"tp_set(%s,%s,%s)",STR(self),STR(k),STR(v));
+    tp_raise(,"tp_set(%s,%s,%s)",TP_CSTR(self),TP_CSTR(k),TP_CSTR(v));
 }
 
 tp_obj tp_add(TP,tp_obj a, tp_obj b) {
@@ -203,7 +203,7 @@ tp_obj tp_add(TP,tp_obj a, tp_obj b) {
         tp_extend(tp);
         return r;
     }
-    tp_raise(None,"tp_add(%s,%s)",STR(a),STR(b));
+    tp_raise(tp_None,"tp_add(%s,%s)",TP_CSTR(a),TP_CSTR(b));
 }
 
 tp_obj tp_mul(TP,tp_obj a, tp_obj b) {
@@ -216,7 +216,7 @@ tp_obj tp_mul(TP,tp_obj a, tp_obj b) {
         int i; for (i=0; i<n; i++) { memcpy(s+al*i,a.string.val,al); }
         return tp_track(tp,r);
     }
-    tp_raise(None,"tp_mul(%s,%s)",STR(a),STR(b));
+    tp_raise(tp_None,"tp_mul(%s,%s)",TP_CSTR(a),TP_CSTR(b));
 }
 
 
@@ -229,7 +229,7 @@ tp_obj tp_len(TP,tp_obj self) {
     } else if (type == TP_LIST) {
         return tp_number(self.list.val->len);
     }
-    tp_raise(None,"tp_len(%s)",STR(self));
+    tp_raise(tp_None,"tp_len(%s)",TP_CSTR(self));
 }
 
 int tp_cmp(TP,tp_obj a, tp_obj b) {
@@ -253,7 +253,7 @@ int tp_cmp(TP,tp_obj a, tp_obj b) {
         case TP_FNC: return a.fnc.val - b.fnc.val;
         case TP_DATA: return (char*)a.data.val - (char*)b.data.val;
     }
-    tp_raise(0,"tp_cmp(%s,%s)",STR(a),STR(b));
+    tp_raise(0,"tp_cmp(%s,%s)",TP_CSTR(a),TP_CSTR(b));
 }
 
 #define TP_OP(name,expr) \
@@ -262,7 +262,7 @@ int tp_cmp(TP,tp_obj a, tp_obj b) {
         tp_num a = _a.number.val; tp_num b = _b.number.val; \
         return tp_number(expr); \
     } \
-    tp_raise(None,"%s(%s,%s)",#name,STR(_a),STR(_b)); \
+    tp_raise(tp_None,"%s(%s,%s)",#name,TP_CSTR(_a),TP_CSTR(_b)); \
 }
 
 TP_OP(tp_and,((long)a)&((long)b));

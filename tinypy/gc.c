@@ -84,7 +84,7 @@ void tp_delete(TP,tp_obj v) {
         tp_free(v.fnc.val);
         return;
     }
-    tp_raise(,"tp_delete(%s)",STR(v));
+    tp_raise(,"tp_delete(%s)",TP_CSTR(v));
 }
 
 void tp_collect(TP) {
@@ -141,7 +141,7 @@ tp_obj tp_track(TP,tp_obj v) {
             tp_grey(tp,v);
             return v;
         }
-        _tp_dict_setx(tp,tp->strings,v,True);
+        _tp_dict_setx(tp,tp->strings,v,tp_True);
     }
     tp_gcinc(tp);
     tp_grey(tp,v);

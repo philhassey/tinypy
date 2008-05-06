@@ -15,7 +15,7 @@ void _tp_list_free(_tp_list *self) {
 }
 
 tp_obj _tp_list_get(TP,_tp_list *self,int k,char *error) {
-    if (k >= self->len) { tp_raise(None,"%s: KeyError: %d\n",error,k); }
+    if (k >= self->len) { tp_raise(tp_None,"%s: KeyError: %d\n",error,k); }
     return self->items[k];
 }
 void _tp_list_insertx(TP,_tp_list *self, int n, tp_obj v) {
@@ -57,7 +57,7 @@ tp_obj tp_index(TP) {
     tp_obj self = TP_OBJ();
     tp_obj v = TP_OBJ();
     int i = _tp_list_find(tp,self.list.val,v);
-    if (i < 0) { tp_raise(None,"tp_index(%s,%s) - item not found",STR(self),STR(v)); }
+    if (i < 0) { tp_raise(tp_None,"tp_index(%s,%s) - item not found",TP_CSTR(self),TP_CSTR(v)); }
     return tp_number(i);
 }
 
@@ -79,7 +79,7 @@ tp_obj tp_append(TP) {
     tp_obj self = TP_OBJ();
     tp_obj v = TP_OBJ();
     _tp_list_append(tp,self.list.val,v);
-    return None;
+    return tp_None;
 }
 
 tp_obj tp_pop(TP) {
@@ -92,7 +92,7 @@ tp_obj tp_insert(TP) {
     int n = TP_NUM();
     tp_obj v = TP_OBJ();
     _tp_list_insert(tp,self.list.val,n,v);
-    return None;
+    return tp_None;
 }
 
 tp_obj tp_extend(TP) {
@@ -102,7 +102,7 @@ tp_obj tp_extend(TP) {
     for (i=0; i<v.list.val->len; i++) {
         _tp_list_append(tp,self.list.val,v.list.val->items[i]);
     }
-    return None;
+    return tp_None;
 }
 
 tp_obj tp_list(TP) {
@@ -127,6 +127,6 @@ int _tp_sort_cmp(tp_obj *a,tp_obj *b) {
 tp_obj tp_sort(TP) {
     tp_obj self = TP_OBJ();
     qsort(self.list.val->items, self.list.val->len, sizeof(tp_obj), (int(*)(const void*,const void*))_tp_sort_cmp);
-    return None;
+    return tp_None;
 }
 

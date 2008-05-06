@@ -36,7 +36,7 @@ tp_obj pygame_surface_set_at(TP) {
     SDL_Surface *s =pygame_obj_to_surf(tp,self);
     Uint32 c = pygame_list_to_color(tp,clr,s);
     SDL_FillRect(s, &r, c);
-    return None;
+    return tp_None;
 }
 
 
@@ -67,7 +67,7 @@ tp_obj pygame_display_set_mode(TP) {
 
 tp_obj pygame_display_flip(TP) {
     SDL_Flip(SDL_GetVideoSurface());
-    return None;
+    return tp_None;
 }
 
 SDL_Rect pygame_list_to_rect(TP,tp_obj o) {
@@ -82,7 +82,7 @@ SDL_Rect pygame_list_to_rect(TP,tp_obj o) {
 tp_obj pygame_display_update(TP) {
     SDL_Rect r = pygame_list_to_rect(tp,TP_TYPE(TP_LIST));
     SDL_UpdateRects(SDL_GetVideoSurface(), 1, &r);
-    return None;
+    return tp_None;
 }
 
 /* event module */
@@ -109,7 +109,7 @@ tp_obj pygame_event_get(TP) {
                 tp_set(tp,d,tp_string("button"),tp_number(e.button.button));
                 break;
         }
-        tp_set(tp,r,None,d);
+        tp_set(tp,r,tp_None,d);
     }
     return r;
 }
@@ -133,7 +133,7 @@ tp_obj pygame_time_get_ticks(TP) {
 
 tp_obj _pygame_init(TP) {
     SDL_Init(SDL_INIT_VIDEO);
-    return None;
+    return tp_None;
 }
 
 

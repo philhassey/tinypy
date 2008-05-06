@@ -31,7 +31,7 @@ int tp_hash(TP,tp_obj v) {
         case TP_FNC: return tp_lua_hash(&v.fnc.val,sizeof(void*));
         case TP_DATA: return tp_lua_hash(&v.data.val,sizeof(void*));
     }
-    tp_raise(0,"tp_hash(%s)",STR(v));
+    tp_raise(0,"tp_hash(%s)",TP_CSTR(v));
 }
 
 void _tp_dict_hash_set(TP,_tp_dict *self, int hash, tp_obj k, tp_obj v) {
@@ -49,7 +49,7 @@ void _tp_dict_hash_set(TP,_tp_dict *self, int hash, tp_obj k, tp_obj v) {
         self->len += 1;
         return;
     }
-    tp_raise(,"_tp_dict_hash_set(%d,%d,%s,%s)",self,hash,STR(k),STR(v));
+    tp_raise(,"_tp_dict_hash_set(%d,%d,%s,%s)",self,hash,TP_CSTR(k),TP_CSTR(v));
 }
 
 void _tp_dict_tp_realloc(TP,_tp_dict *self,int len) {
@@ -106,14 +106,14 @@ void _tp_dict_set(TP,_tp_dict *self,tp_obj k, tp_obj v) {
 tp_obj _tp_dict_get(TP,_tp_dict *self,tp_obj k, char *error) {
     int n = _tp_dict_find(tp,self,k);
     if (n < 0) {
-        tp_raise(None,"%s: KeyError: %s\n",error,STR(k));
+        tp_raise(tp_None,"%s: KeyError: %s\n",error,TP_CSTR(k));
     }
     return self->items[n].val;
 }
 
 void _tp_dict_del(TP,_tp_dict *self,tp_obj k, char *error) {
     int n = _tp_dict_find(tp,self,k);
-    if (n < 0) { tp_raise(,"%s: KeyError: %s\n",error,STR(k)); }
+    if (n < 0) { tp_raise(,"%s: KeyError: %s\n",error,TP_CSTR(k)); }
     self->items[n].used = -1;
     self->len -= 1;
 }
@@ -150,7 +150,7 @@ tp_obj tp_merge(TP) {
         _tp_dict_set(tp,self.dict.val,
             v.dict.val->items[n].key,v.dict.val->items[n].val);
     }
-    return None;
+    return tp_None;
 }
 
 tp_obj tp_dict(TP) {
