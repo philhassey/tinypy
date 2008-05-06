@@ -16,4 +16,5 @@
 * cleaned up encode.py so that registers are no longer leaked
     added assert after each frame to check that this is the case
 * applied patch by KK to improve tinypy/tests.py feedback
-* applied patch by allenfant to finish namespacing tinypy
+* applied patch by allefant to finish namespacing tinypy
+* applied patch by allefant to keep blob->tinypy.h from having warnings

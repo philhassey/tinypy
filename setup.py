@@ -142,6 +142,17 @@ def build_blob():
             if '=' in line: continue
             if '#' in line: continue
             line = line.replace('{',';') 
+            
+            # Do not include prototypes already defined earlier, or gcc will
+            # warn about doubled prototypes in user code.
+            if '(' in line:
+                line2 = line[:line.find('(')]
+                got_already = False
+                for already in out:
+                    if already.startswith(line2):
+                        got_already = True
+                        break
+                if got_already: continue
             out.append(line)
     out.append("#endif")
     out.append('')
