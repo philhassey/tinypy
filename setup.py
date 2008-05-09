@@ -51,7 +51,7 @@ Commands:
     
 Options:
     test - fully test tinypy during build
-    math - build math module *
+    math - build math module
     random - build random module *
     pygame - build pygame module **
     marshal - build marshal module ***
@@ -218,7 +218,7 @@ def build_gcc():
     print("# OK")
     
 def get_libs():
-    modules = ['pygame']
+    modules = os.listdir('modules')
     for m in modules[:]:
         if m not in sys.argv: modules.remove(m)
     global MODULES
@@ -231,7 +231,7 @@ def build_mymain():
         
     vs = []
     for m in MODULES:
-        vs.append('#include "../modules/%s.c"'%m)
+        vs.append('#include "../modules/%s/init.c"'%m)
     out = out.replace('/* INCLUDE */','\n'.join(vs))
     
     vs = []

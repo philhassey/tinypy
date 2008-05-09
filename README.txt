@@ -13,6 +13,11 @@ Depends on:
 - sdl (for the pygame module)
 - gcc
 
+Credits:
+    - math module - Rockins Chen <ybc2084@gmail.com>
+    - VS support - Krzysztof Kowalczyk
+    - bug fixin' - Dean Hall & Allefant
+
 Thanks to allefant and the python community for all the tips and feedback!
 Thanks to John M. for a python 2.5 compat. patch.
 And to illume and the rest of #ludumdare for morale support.
