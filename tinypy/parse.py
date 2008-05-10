@@ -335,7 +335,7 @@ base_dmap = {
     '%':{'lbp':60,'bp':60,'led':infix_led},
     '*':{'lbp':60,'nud':vargs_nud,
         'bp':60,'led':infix_led,},
-    '**': {'lbp':60,'nud':nargs_nud,
+    '**': {'lbp':65,'nud':nargs_nud,
         'bp':65,'led':infix_led,},
     '/':{'lbp':60,'bp':60,'led':infix_led},
     '(':{'lbp':70,'nud':paren_nud,
