@@ -146,7 +146,7 @@ def build_blob():
             # Do not include prototypes already defined earlier, or gcc will
             # warn about doubled prototypes in user code.
             if '(' in line:
-                line2 = line[:line.find('(')]
+                line2 = line[:line.find('(') + 1]
                 got_already = False
                 for already in out:
                     if already.startswith(line2):
