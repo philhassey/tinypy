@@ -40,7 +40,6 @@ tp_obj tp_data(TP,void *v) {
     tp_obj r = {TP_DATA};
     r.data.info = tp_malloc(sizeof(_tp_data));
     r.data.val = v;
-    r.data.meta = 0;
     r.data.meta = &r.data.info->meta;
     return tp_track(tp,r);
 }
