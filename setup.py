@@ -42,7 +42,7 @@ def main():
         print 'invalid command'
 
 HELP = """
-python setup.py command [options]
+python setup.py command [options] [modules]
 
 Commands:
     linux - build tinypy for linux
@@ -58,7 +58,9 @@ Commands:
 Options:
     test - run tests during build
     clean - rebuild all .tpc during build
-    boot - bootstrap tinypy (best testing)
+    boot - fully bootstrap and test tinypy
+    
+Modules:
     math - build math module
     random - build random module *
     pygame - build pygame module **
