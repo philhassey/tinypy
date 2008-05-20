@@ -276,7 +276,7 @@ tp_obj tp_import(TP,char *fname, char *name, void *codes) {
         code = tp_load(tp);
         codes = code.string.val;
     } else {
-        code = tp_data(tp,codes);
+        code = tp_data(tp,0,codes);
     }
 
     g = tp_dict(tp);

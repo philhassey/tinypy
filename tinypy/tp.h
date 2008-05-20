@@ -68,7 +68,7 @@ typedef struct tp_data_ {
     int type;
     struct _tp_data *info;
     void *val;
-    struct tp_meta *meta;
+    int magic;
 } tp_data_;
 
 typedef union tp_obj {
@@ -162,18 +162,9 @@ typedef struct tp_vm {
 } tp_vm;
 
 #define TP tp_vm *tp
-typedef struct tp_meta {
-    int type;
-    tp_obj (*get)(TP,tp_obj,tp_obj);
-    void (*set)(TP,tp_obj,tp_obj,tp_obj);
-    void (*free)(TP,tp_obj);
-/*     tp_obj (*del)(TP,tp_obj,tp_obj);
-       tp_obj (*has)(TP,tp_obj,tp_obj);
-       tp_obj (*len)(TP,tp_obj);*/
-} tp_meta;
 typedef struct _tp_data {
     int gci;
-    tp_meta meta;
+    void (*free)(TP,tp_obj);
 } _tp_data;
 
 /* NOTE: these are the few out of namespace items for convenience*/

@@ -115,8 +115,6 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
                 return tp_method(tp,self,tp_replace);
             }
         }
-    } else if (type == TP_DATA) {
-        return self.data.meta->get(tp,self,k);
     }
 
     if (k.type == TP_LIST) {
@@ -179,9 +177,6 @@ void tp_set(TP,tp_obj self, tp_obj k, tp_obj v) {
                 return;
             }
         }
-    } else if (type == TP_DATA) {
-        self.data.meta->set(tp,self,k,v);
-        return;
     }
     tp_raise(,"tp_set(%s,%s,%s)",TP_CSTR(self),TP_CSTR(k),TP_CSTR(v));
 }

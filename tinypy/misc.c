@@ -36,11 +36,10 @@ tp_obj tp_method(TP,tp_obj self,tp_obj v(TP)) {
     return tp_fnc_new(tp,2,v,self,tp_None);
 }
 
-tp_obj tp_data(TP,void *v) {
+tp_obj tp_data(TP,int magic,void *v) {
     tp_obj r = {TP_DATA};
     r.data.info = tp_malloc(sizeof(_tp_data));
     r.data.val = v;
-    r.data.meta = &r.data.info->meta;
     return tp_track(tp,r);
 }
 

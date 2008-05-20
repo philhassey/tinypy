@@ -75,8 +75,8 @@ void tp_delete(TP,tp_obj v) {
         tp_free(v.string.info);
         return;
     } else if (type == TP_DATA) {
-        if (v.data.meta && v.data.meta->free) {
-            v.data.meta->free(tp,v);
+        if (v.data.info->free) {
+            v.data.info->free(tp,v);
         }
         tp_free(v.data.info);
         return;
