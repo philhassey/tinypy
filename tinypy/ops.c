@@ -15,7 +15,7 @@ tp_obj tp_str(TP,tp_obj self) {
     } else if (type == TP_DATA) {
         return tp_printf(tp,"<data 0x%x>",self.data.val);
     } else if (type == TP_FNC) {
-        return tp_printf(tp,"<fnc 0x%x>",self.fnc.val);
+        return tp_printf(tp,"<fnc 0x%x>",self.fnc.info);
     }
     return tp_string("<?>");
 }
@@ -245,7 +245,7 @@ int tp_cmp(TP,tp_obj a, tp_obj b) {
             return a.list.val->len-b.list.val->len;
         }
         case TP_DICT: return a.dict.val - b.dict.val;
-        case TP_FNC: return a.fnc.val - b.fnc.val;
+        case TP_FNC: return a.fnc.info - b.fnc.info;
         case TP_DATA: return (char*)a.data.val - (char*)b.data.val;
     }
     tp_raise(0,"tp_cmp(%s,%s)",TP_CSTR(a),TP_CSTR(b));

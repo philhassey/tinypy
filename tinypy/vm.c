@@ -109,10 +109,10 @@ void _tp_call(TP,tp_obj *dest, tp_obj fnc, tp_obj params) {
         return;
     }
     if (fnc.type == TP_FNC) {
-        tp_frame(tp,fnc.fnc.val->globals,fnc.fnc.fval,dest);
+        tp_frame(tp,fnc.fnc.info->globals,fnc.fnc.val,dest);
         if ((fnc.fnc.ftype&2)) {
             tp->frames[tp->cur].regs[0] = params;
-            _tp_list_insert(tp,params.list.val,0,fnc.fnc.val->self);
+            _tp_list_insert(tp,params.list.val,0,fnc.fnc.info->self);
         } else {
             tp->frames[tp->cur].regs[0] = params;
         }

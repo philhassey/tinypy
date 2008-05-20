@@ -28,7 +28,7 @@ int tp_hash(TP,tp_obj v) {
             int r = v.list.val->len; int n; for(n=0; n<v.list.val->len; n++) {
             tp_obj vv = v.list.val->items[n]; r += vv.type != TP_LIST?tp_hash(tp,v.list.val->items[n]):tp_lua_hash(&vv.list.val,sizeof(void*)); } return r;
         }
-        case TP_FNC: return tp_lua_hash(&v.fnc.val,sizeof(void*));
+        case TP_FNC: return tp_lua_hash(&v.fnc.info,sizeof(void*));
         case TP_DATA: return tp_lua_hash(&v.data.val,sizeof(void*));
     }
     tp_raise(0,"tp_hash(%s)",TP_CSTR(v));

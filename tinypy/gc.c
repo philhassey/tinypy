@@ -32,8 +32,8 @@ void tp_follow(TP,tp_obj v) {
         }
     }
     if (type == TP_FNC) {
-        tp_grey(tp,v.fnc.val->self);
-        tp_grey(tp,v.fnc.val->globals);
+        tp_grey(tp,v.fnc.info->self);
+        tp_grey(tp,v.fnc.info->globals);
     }
 }
 
@@ -81,7 +81,7 @@ void tp_delete(TP,tp_obj v) {
         tp_free(v.data.info);
         return;
     } else if (type == TP_FNC) {
-        tp_free(v.fnc.val);
+        tp_free(v.fnc.info);
         return;
     }
     tp_raise(,"tp_delete(%s)",TP_CSTR(v));

@@ -8,19 +8,19 @@ tp_obj _tp_dcall(TP,tp_obj fnc(TP)) {
 }
 tp_obj _tp_tcall(TP,tp_obj fnc) {
     if (fnc.fnc.ftype&2) {
-        _tp_list_insert(tp,tp->params.list.val,0,fnc.fnc.val->self);
+        _tp_list_insert(tp,tp->params.list.val,0,fnc.fnc.info->self);
     }
-    return _tp_dcall(tp,fnc.fnc.fval);
+    return _tp_dcall(tp,fnc.fnc.val);
 }
 
 tp_obj tp_fnc_new(TP,int t, void *v, tp_obj s, tp_obj g) {
     tp_obj r = {TP_FNC};
-    _tp_fnc *self = tp_malloc(sizeof(_tp_fnc));
-    self->self = s;
-    self->globals = g;
+    _tp_fnc *info = tp_malloc(sizeof(_tp_fnc));
+    info->self = s;
+    info->globals = g;
     r.fnc.ftype = t;
-    r.fnc.val = self;
-    r.fnc.fval = v;
+    r.fnc.info = info;
+    r.fnc.val = v;
     return tp_track(tp,r);
 }
 

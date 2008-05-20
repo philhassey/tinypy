@@ -13,7 +13,7 @@ tp_obj tp_print(TP) {
 tp_obj tp_bind(TP) {
     tp_obj r = TP_OBJ();
     tp_obj self = TP_OBJ();
-    return tp_fnc_new(tp,r.fnc.ftype|2,r.fnc.fval,self,r.fnc.val->globals);
+    return tp_fnc_new(tp,r.fnc.ftype|2,r.fnc.val,self,r.fnc.info->globals);
 }
 
 tp_obj tp_min(TP) {

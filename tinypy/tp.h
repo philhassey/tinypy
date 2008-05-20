@@ -60,9 +60,9 @@ typedef struct tp_dict_ {
 } tp_dict_;
 typedef struct tp_fnc_ {
     int type;
-    struct _tp_fnc *val;
+    struct _tp_fnc *info;
     int ftype;
-    void *fval;
+    void *val;
 } tp_fnc_;
 typedef struct tp_data_ {
     int type;
