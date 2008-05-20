@@ -22,3 +22,4 @@
 * fixed precedent of **
 * removed unused tp_data meta methods
 * made tp_data API "safer" by requiring the magic type
+* improved setup.py to handle the clean argument

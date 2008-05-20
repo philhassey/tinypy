@@ -4,6 +4,7 @@ import sys
 VARS = {}
 TOPDIR = os.path.abspath(os.path.dirname(__file__))
 TEST = False
+CLEAN = False
 CORE = ['tokenize','parse','encode','py2bc']
 MODULES = []
 
@@ -13,8 +14,9 @@ def main():
         print HELP
         return
     
-    global TEST
+    global TEST,CLEAN
     TEST = 'test' in sys.argv
+    CLEAN = TEST or 'clean' in sys.argv
     
     get_libs()
     build_mymain()
@@ -51,6 +53,7 @@ Commands:
     
 Options:
     test - fully test tinypy during build
+    clean - rebuild all .tpc during build
     math - build math module
     random - build random module *
     pygame - build pygame module **
@@ -95,6 +98,10 @@ def do_cmd(cmd):
     if r:
         print 'exit_status',r
         sys.exit(r)
+        
+def do_chdir(dest):
+    print 'cd',dest
+    os.chdir(dest)
 
 def build_bc(opt=False):
     out = []
@@ -116,9 +123,9 @@ def open_tinypy(fname,*args):
     
 def build_blob():
     mods = CORE[:]
-    os.chdir(os.path.join(TOPDIR,'tinypy'))
+    do_chdir(os.path.join(TOPDIR,'tinypy'))
     for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
-    os.chdir(os.path.join(TOPDIR))
+    do_chdir(os.path.join(TOPDIR))
     
     out = []
     out.append("/*")
@@ -181,6 +188,16 @@ def build_blob():
     f = open(dest,'w')
     f.write('\n'.join(out))
     f.close()
+                
+def py2bc(cmd,mod):
+    src = '%s.py'%mod
+    dest = '%s.tpc'%mod
+    if CLEAN or not os.path.exists(dest) or os.stat(src).st_mtime > os.stat(dest).st_mtime:
+        cmd = cmd.replace('$SRC',src)
+        cmd = cmd.replace('$DEST',dest)
+        do_cmd(cmd)
+    else:
+        print '#',dest,'is up to date'
 
 def build_gcc():
     #compat = '-compat' in sys.argv
@@ -190,23 +207,25 @@ def build_gcc():
     #if compat: do_cmd("g++ -Wall -g tpmain.c $FLAGS -lm -o tinypy-cpp")
     
     mods = CORE[:]
-    os.chdir(os.path.join(TOPDIR,'tinypy'))
+    do_chdir(os.path.join(TOPDIR,'tinypy'))
     if TEST:
         mods.append('tests')
         do_cmd("gcc -std=c89 -Wall -g vmmain.c $FLAGS -lm -o vm")
         do_cmd('python tests.py $SYS')
-        for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
+        for mod in mods:
+            py2bc('python py2bc.py $SRC $DEST',mod)
     else:
-        for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
+        for mod in mods:
+            py2bc('python py2bc.py $SRC $DEST -nopos',mod)
     if TEST:
         do_cmd('$VM tests.tpc $SYS')
-        for mod in mods: do_cmd('$VM py2bc.tpc %s.py %s.tpc'%(mod,mod))
+        for mod in mods: py2bc('$VM py2bc.tpc $SRC $DEST',mod)
         build_bc()
         do_cmd("gcc -std=c89 -Wall -g tpmain.c $FLAGS -lm -o tinypy")
     #second pass - builts optimized binaries and stuff
     if TEST:
         do_cmd('$TINYPY tests.py $SYS')
-        for mod in mods: do_cmd('$TINYPY py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
+        for mod in mods: py2bc('$TINYPY py2bc.py $SRC $DEST -nopos',mod)
     build_bc(True)
     if TEST:
         do_cmd("gcc -std=c89 -Wall -O2 tpmain.c $FLAGS -lm -o tinypy")
