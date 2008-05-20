@@ -253,7 +253,7 @@ void tp_run(TP,int cur) {
 }
 
 
-tp_obj tp_call(TP, char *mod, char *fnc, tp_obj params) {
+tp_obj tp_call(TP, const char *mod, const char *fnc, tp_obj params) {
     tp_obj tmp;
     tp_obj r = tp_None;
     tmp = tp_get(tp,tp->modules,tp_string(mod));
@@ -263,7 +263,7 @@ tp_obj tp_call(TP, char *mod, char *fnc, tp_obj params) {
     return r;
 }
 
-tp_obj tp_import(TP,char *fname, char *name, void *codes) {
+tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
     tp_obj code = tp_None;
     tp_obj g;
 
@@ -274,7 +274,8 @@ tp_obj tp_import(TP,char *fname, char *name, void *codes) {
     if (!codes) {
         tp_params_v(tp,1,tp_string(fname));
         code = tp_load(tp);
-        codes = code.string.val;
+        /* We cast away the constness. */
+        codes = (void *)code.string.val;
     } else {
         code = tp_data(tp,0,codes);
     }
@@ -303,7 +304,7 @@ tp_obj tp_exec_(TP) {
 
 tp_obj tp_import_(TP) {
     tp_obj mod = TP_OBJ();
-    char *s;
+    char const *s;
     tp_obj r;
 
     if (tp_has(tp,tp->modules,mod).number.val) {
@@ -316,7 +317,7 @@ tp_obj tp_import_(TP) {
 }
 
 void tp_builtins(TP) {
-    struct {char *s;void *f;} b[] = {
+    struct {const char *s;void *f;} b[] = {
     {"print",tp_print}, {"range",tp_range}, {"min",tp_min},
     {"max",tp_max}, {"bind",tp_bind}, {"copy",tp_copy},
     {"import",tp_import_}, {"len",tp_len_}, {"assert",tp_assert},

@@ -77,8 +77,9 @@ def vars_linux():
     VARS['$RM'] = 'rm -f'
     VARS['$VM'] = './vm'
     VARS['$TINYPY'] = './tinypy'
-    VARS['$FLAGS'] = ''
     VARS['$SYS'] = '-linux'
+    VARS['$FLAGS'] = ''
+    VARS['$WFLAGS'] = '-Wwrite-strings -std=c89 -Wall'
     
     if 'pygame' in MODULES:
         VARS['$FLAGS'] += ' `sdl-config --cflags --libs` '
@@ -88,6 +89,7 @@ def vars_windows():
     VARS['$VM'] = 'vm'
     VARS['$TINYPY'] = 'tinypy'
     VARS['$FLAGS'] = '-mwindows -lmingw32'
+    VARS['$WFLAGS'] = '-Wwrite-strings -std=c89 -Wall'
     VARS['$SYS'] = '-mingw32'
 
     if 'pygame' in MODULES:
@@ -207,17 +209,11 @@ def py2bc(cmd,mod):
         print '#',dest,'is up to date'
 
 def build_gcc():
-    #compat = '-compat' in sys.argv
-    #if compat: do_cmd("gcc -std=c89 -Wall -g vmmain.c $FLAGS -lm -o vm-c89")
-    #if compat: do_cmd("g++ -Wall -g vmmain.c $FLAGS -lm -o vm-cpp")
-    #if compat: do_cmd("gcc -std=c89 -Wall -g tpmain.c $FLAGS -lm -o tinypy-c89")
-    #if compat: do_cmd("g++ -Wall -g tpmain.c $FLAGS -lm -o tinypy-cpp")
-    
     mods = CORE[:]
     do_chdir(os.path.join(TOPDIR,'tinypy'))
     if TEST:
         mods.append('tests')
-        do_cmd("gcc -std=c89 -Wall -g vmmain.c $FLAGS -lm -o vm")
+        do_cmd("gcc $WFLAGS -g vmmain.c $FLAGS -lm -o vm")
         do_cmd('python tests.py $SYS')
         for mod in mods:
             py2bc('python py2bc.py $SRC $DEST',mod)
@@ -228,19 +224,19 @@ def build_gcc():
         do_cmd('$VM tests.tpc $SYS')
         for mod in mods: py2bc('$VM py2bc.tpc $SRC $DEST',mod)
         build_bc()
-        do_cmd("gcc -std=c89 -Wall -g tpmain.c $FLAGS -lm -o tinypy")
+        do_cmd("gcc $WFLAGS -g tpmain.c $FLAGS -lm -o tinypy")
     #second pass - builts optimized binaries and stuff
     if BOOT:
         do_cmd('$TINYPY tests.py $SYS')
         for mod in mods: py2bc('$TINYPY py2bc.py $SRC $DEST -nopos',mod)
     build_bc(True)
     if BOOT:
-        do_cmd("gcc -std=c89 -Wall -O2 tpmain.c $FLAGS -lm -o tinypy")
+        do_cmd("gcc $WFLAGS -O2 tpmain.c $FLAGS -lm -o tinypy")
         do_cmd('$TINYPY tests.py $SYS')
         print("# OK - we'll try -O3 for extra speed ...")
-        do_cmd("gcc -Wall -O3 tpmain.c $FLAGS -lm -o tinypy")
+        do_cmd("gcc $WFLAGS -O3 tpmain.c $FLAGS -lm -o tinypy")
         do_cmd('$TINYPY tests.py $SYS')
-    do_cmd("gcc -std=c89 -Wall -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
+    do_cmd("gcc -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
     do_chdir('..')
     if TEST:
         test_mods('./build/tinypy $TESTS')

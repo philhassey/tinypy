@@ -5,7 +5,7 @@ tp_obj tp_string_t(TP, int n) {
     return r;
 }
 
-tp_obj tp_printf(TP,char *fmt,...) {
+tp_obj tp_printf(TP, char const *fmt,...) {
     int l;
     tp_obj r;
     char *s;
@@ -13,7 +13,7 @@ tp_obj tp_printf(TP,char *fmt,...) {
     va_start(arg, fmt);
     l = vsnprintf(NULL, 0, fmt,arg);
     r = tp_string_t(tp,l);
-    s = r.string.val;
+    s = r.string.info->s;
     va_end(arg);
     va_start(arg, fmt);
     vsprintf(s,fmt,arg);
@@ -43,7 +43,7 @@ tp_obj tp_join(TP) {
         l += tp_str(tp,val.list.val->items[i]).string.len;
     }
     r = tp_string_t(tp,l);
-    s = r.string.val;
+    s = r.string.info->s;
     l = 0;
     for (i=0; i<val.list.val->len; i++) {
         tp_obj e;
@@ -58,7 +58,7 @@ tp_obj tp_join(TP) {
 
 tp_obj tp_string_slice(TP,tp_obj s, int a, int b) {
     tp_obj r = tp_string_t(tp,b-a);
-    char *m = r.string.val;
+    char *m = r.string.info->s;
     memcpy(m,s.string.val+a,b-a);
     return tp_track(tp,r);
 }
@@ -104,12 +104,12 @@ tp_obj tp_chr(TP) {
     return tp_string_n(tp->chars[(unsigned char)v],1);
 }
 tp_obj tp_ord(TP) {
-    char *s = TP_STR();
+    char const *s = TP_STR();
     return tp_number(s[0]);
 }
 
 tp_obj tp_strip(TP) {
-    char *v = TP_STR();
+    char const *v = TP_STR();
     int i, l = strlen(v); int a = l, b = 0;
     tp_obj r;
     char *s;
@@ -120,7 +120,7 @@ tp_obj tp_strip(TP) {
     }
     if ((b-a) < 0) { return tp_string(""); }
     r = tp_string_t(tp,b-a);
-    s = r.string.val;
+    s = r.string.info->s;
     memcpy(s,v+a,b-a);
     return tp_track(tp,r);
 }
@@ -145,7 +145,7 @@ tp_obj tp_replace(TP) {
 /*     fprintf(stderr,"ns: %d\n",n); */
     l = s.string.len + n * (v.string.len-k.string.len);
     rr = tp_string_t(tp,l);
-    r = rr.string.val;
+    r = rr.string.info->s;
     d = r;
     z = p = s;
     while ((i = _tp_str_index(p,k)) != -1) {

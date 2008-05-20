@@ -134,7 +134,7 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
             return tp_list_n(tp,b-a,&self.list.val->items[a]);
         } else if (type == TP_STRING) {
             tp_obj r = tp_string_t(tp,b-a);
-            char *ptr = r.string.val;
+            char *ptr = r.string.info->s;
             memcpy(ptr,self.string.val+a,b-a); ptr[b-a]=0;
             return tp_track(tp,r);
         }
@@ -187,7 +187,7 @@ tp_obj tp_add(TP,tp_obj a, tp_obj b) {
     } else if (a.type == TP_STRING && a.type == b.type) {
         int al = a.string.len, bl = b.string.len;
         tp_obj r = tp_string_t(tp,al+bl);
-        char *s = r.string.val;
+        char *s = r.string.info->s;
         memcpy(s,a.string.val,al); memcpy(s+al,b.string.val,bl);
         return tp_track(tp,r);
     } else if (a.type == TP_LIST && a.type == b.type) {
@@ -207,7 +207,7 @@ tp_obj tp_mul(TP,tp_obj a, tp_obj b) {
     } else if (a.type == TP_STRING && b.type == TP_NUMBER) {
         int al = a.string.len; int n = b.number.val;
         tp_obj r = tp_string_t(tp,al*n);
-        char *s = r.string.val;
+        char *s = r.string.info->s;
         int i; for (i=0; i<n; i++) { memcpy(s+al*i,a.string.val,al); }
         return tp_track(tp,r);
     }

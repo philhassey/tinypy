@@ -77,14 +77,14 @@ tp_obj tp_range(TP) {
 
 
 tp_obj tp_system(TP) {
-    char *s = TP_STR();
+    char const *s = TP_STR();
     int r = system(s);
     return tp_number(r);
 }
 
 tp_obj tp_istype(TP) {
     tp_obj v = TP_OBJ();
-    char *t = TP_STR();
+    char const *t = TP_STR();
     if (strcmp("string",t) == 0) { return tp_number(v.type == TP_STRING); }
     if (strcmp("list",t) == 0) { return tp_number(v.type == TP_LIST); }
     if (strcmp("dict",t) == 0) { return tp_number(v.type == TP_DICT); }
@@ -107,7 +107,7 @@ tp_obj tp_float(TP) {
 
 
 tp_obj tp_save(TP) {
-    char *fname = TP_STR();
+    char const *fname = TP_STR();
     tp_obj v = TP_OBJ();
     FILE *f;
     f = fopen(fname,"wb");
@@ -122,7 +122,7 @@ tp_obj tp_load(TP) {
     long l;
     tp_obj r;
     char *s;
-    char *fname = TP_STR();
+    char const *fname = TP_STR();
     struct stat stbuf;
     stat(fname, &stbuf);
     l = stbuf.st_size;
@@ -131,7 +131,7 @@ tp_obj tp_load(TP) {
         tp_raise(tp_None,"tp_load(%s)",fname);
     }
     r = tp_string_t(tp,l);
-    s = r.string.val;
+    s = r.string.info->s;
     fread(s,1,l,f);
     fclose(f);
     return tp_track(tp,r);
@@ -161,12 +161,12 @@ tp_obj tp_round(TP) {
 }
 
 tp_obj tp_exists(TP) {
-    char *s = TP_STR();
+    char const *s = TP_STR();
     struct stat stbuf;
     return tp_number(!stat(s,&stbuf));
 }
 tp_obj tp_mtime(TP) {
-    char *s = TP_STR();
+    char const *s = TP_STR();
     struct stat stbuf;
     if (!stat(s,&stbuf)) { return tp_number(stbuf.st_mtime); }
     tp_raise(tp_None,"tp_mtime(%s)",s);

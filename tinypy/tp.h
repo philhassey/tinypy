@@ -47,7 +47,7 @@ typedef struct tp_number_ {
 typedef struct tp_string_ {
     int type;
     struct _tp_string *info;
-    char *val;
+    char const *val;
     int len;
 } tp_string_;
 typedef struct tp_list_ {
@@ -180,7 +180,7 @@ tp_obj tp_len(TP,tp_obj);
 tp_obj tp_str(TP,tp_obj);
 int tp_cmp(TP,tp_obj,tp_obj);
 void _tp_raise(TP,tp_obj);
-tp_obj tp_printf(TP,char *fmt,...);
+tp_obj tp_printf(TP,char const *fmt,...);
 tp_obj tp_track(TP,tp_obj);
 void tp_grey(TP,tp_obj);
 
@@ -215,7 +215,7 @@ tp_inline static tp_obj tp_number(tp_num v) {
     return val;
 }
 
-tp_inline static tp_obj tp_string(char *v) {
+tp_inline static tp_obj tp_string(char const *v) {
     tp_obj val;
     tp_string_ s = {TP_STRING, 0, v, 0};
     s.len = strlen(v);
@@ -223,7 +223,7 @@ tp_inline static tp_obj tp_string(char *v) {
     return val;
 }
 
-tp_inline static tp_obj tp_string_n(char *v,int n) {
+tp_inline static tp_obj tp_string_n(char const *v,int n) {
     tp_obj val;
     tp_string_ s = {TP_STRING, 0,v,n};
     val.string = s;

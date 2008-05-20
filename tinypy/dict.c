@@ -1,4 +1,4 @@
-int tp_lua_hash(void *v,int l) {
+int tp_lua_hash(void const *v,int l) {
     int i,step = (l>>5)+1;
     int h = l + (l >= 4?*(int*)v:0);
     for (i=l; i>=step; i-=step) {
@@ -103,7 +103,7 @@ void _tp_dict_set(TP,_tp_dict *self,tp_obj k, tp_obj v) {
     tp_grey(tp,k); tp_grey(tp,v);
 }
 
-tp_obj _tp_dict_get(TP,_tp_dict *self,tp_obj k, char *error) {
+tp_obj _tp_dict_get(TP,_tp_dict *self,tp_obj k, const char *error) {
     int n = _tp_dict_find(tp,self,k);
     if (n < 0) {
         tp_raise(tp_None,"%s: KeyError: %s\n",error,TP_CSTR(k));
@@ -111,7 +111,7 @@ tp_obj _tp_dict_get(TP,_tp_dict *self,tp_obj k, char *error) {
     return self->items[n].val;
 }
 
-void _tp_dict_del(TP,_tp_dict *self,tp_obj k, char *error) {
+void _tp_dict_del(TP,_tp_dict *self,tp_obj k, const char *error) {
     int n = _tp_dict_find(tp,self,k);
     if (n < 0) { tp_raise(,"%s: KeyError: %s\n",error,TP_CSTR(k)); }
     self->items[n].used = -1;
