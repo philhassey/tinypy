@@ -1,6 +1,6 @@
 void _tp_list_realloc(_tp_list *self,int len) {
     if (!len) { len=1; }
-    self->items = tp_realloc(self->items,len*sizeof(tp_obj));
+    self->items = (tp_obj*)tp_realloc(self->items,len*sizeof(tp_obj));
     self->alloc = len;
 }
 
@@ -62,7 +62,7 @@ tp_obj tp_index(TP) {
 }
 
 _tp_list *_tp_list_new(void) {
-    return tp_malloc(sizeof(_tp_list));
+    return (_tp_list*)tp_malloc(sizeof(_tp_list));
 }
 
 tp_obj _tp_list_copy(TP, tp_obj rr) {
@@ -70,7 +70,7 @@ tp_obj _tp_list_copy(TP, tp_obj rr) {
     _tp_list *o = rr.list.val;
     _tp_list *r = _tp_list_new();
     *r = *o; r->gci = 0;
-    r->items = tp_malloc(sizeof(tp_obj)*o->alloc);
+    r->items = (tp_obj*)tp_malloc(sizeof(tp_obj)*o->alloc);
     memcpy(r->items,o->items,sizeof(tp_obj)*o->alloc);
     val.list.val = r;
     return tp_track(tp,val);

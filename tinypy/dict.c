@@ -57,7 +57,7 @@ void _tp_dict_tp_realloc(TP,_tp_dict *self,int len) {
     int i,alloc = self->alloc;
     len = _tp_max(8,len);
 
-    self->items = tp_malloc(len*sizeof(tp_item));
+    self->items = (tp_item*)tp_malloc(len*sizeof(tp_item));
     self->alloc = len; self->mask = len-1;
     self->len = 0; self->used = 0;
 
@@ -119,7 +119,7 @@ void _tp_dict_del(TP,_tp_dict *self,tp_obj k, const char *error) {
 }
 
 _tp_dict *_tp_dict_new(void) {
-    _tp_dict *self = tp_malloc(sizeof(_tp_dict));
+    _tp_dict *self = (_tp_dict*)tp_malloc(sizeof(_tp_dict));
     return self;
 }
 tp_obj _tp_dict_copy(TP,tp_obj rr) {
@@ -127,7 +127,7 @@ tp_obj _tp_dict_copy(TP,tp_obj rr) {
     _tp_dict *o = rr.dict.val;
     _tp_dict *r = _tp_dict_new();
     *r = *o; r->gci = 0;
-    r->items = tp_malloc(sizeof(tp_item)*o->alloc);
+    r->items = (tp_item*)tp_malloc(sizeof(tp_item)*o->alloc);
     memcpy(r->items,o->items,sizeof(tp_item)*o->alloc);
     obj.dict.val = r;
     return tp_track(tp,obj);

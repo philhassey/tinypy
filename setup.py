@@ -79,8 +79,9 @@ def vars_linux():
     VARS['$TINYPY'] = './tinypy'
     VARS['$SYS'] = '-linux'
     VARS['$FLAGS'] = ''
-    VARS['$WFLAGS'] = '-Wwrite-strings -std=c89 -Wall'
-    # -Wc++-compat
+    
+    VARS['$WFLAGS'] = '-std=c89 -Wall -Wc++-compat'
+    #-Wwrite-strings - i think this is included in -Wc++-compat
     
     if 'pygame' in MODULES:
         VARS['$FLAGS'] += ' `sdl-config --cflags --libs` '

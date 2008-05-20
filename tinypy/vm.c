@@ -1,7 +1,7 @@
 
 tp_vm *_tp_init(void) {
     int i;
-    tp_vm *tp = tp_malloc(sizeof(tp_vm));
+    tp_vm *tp = (tp_vm*)tp_malloc(sizeof(tp_vm));
     tp->cur = 0;
     tp->jmp = 0;
     tp->ex = tp_None;
@@ -109,7 +109,7 @@ void _tp_call(TP,tp_obj *dest, tp_obj fnc, tp_obj params) {
         return;
     }
     if (fnc.type == TP_FNC) {
-        tp_frame(tp,fnc.fnc.info->globals,fnc.fnc.val,dest);
+        tp_frame(tp,fnc.fnc.info->globals,(tp_code*)fnc.fnc.val,dest);
         if ((fnc.fnc.ftype&2)) {
             tp->frames[tp->cur].regs[0] = params;
             _tp_list_insert(tp,params.list.val,0,fnc.fnc.info->self);
@@ -284,7 +284,7 @@ tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
     tp_set(tp,g,tp_string("__name__"),tp_string(name));
     tp_set(tp,g,tp_string("__code__"),code);
     tp_set(tp,g,tp_string("__dict__"),g);
-    tp_frame(tp,g,codes,0);
+    tp_frame(tp,g,(tp_code*)codes,0);
     tp_set(tp,tp->modules,tp_string(name),g);
 
     if (!tp->jmp) { tp_run(tp,tp->cur); }
@@ -297,7 +297,7 @@ tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
 tp_obj tp_exec_(TP) {
     tp_obj code = TP_OBJ();
     tp_obj globals = TP_OBJ();
-    tp_frame(tp,globals,(void*)code.string.val,0);
+    tp_frame(tp,globals,(tp_code*)code.string.val,0);
     return tp_None;
 }
 
@@ -329,7 +329,7 @@ void tp_builtins(TP) {
     {"ord",tp_ord}, {"merge",tp_merge}, {0,0},
     };
     int i; for(i=0; b[i].s; i++) {
-        tp_set(tp,tp->builtins,tp_string(b[i].s),tp_fnc(tp,b[i].f));
+        tp_set(tp,tp->builtins,tp_string(b[i].s),tp_fnc(tp,(tp_obj (*)(tp_vm *))b[i].f));
     }
 }
 
@@ -351,7 +351,7 @@ tp_obj tp_compile(TP, tp_obj text, tp_obj fname) {
 
 tp_obj tp_exec(TP,tp_obj code, tp_obj globals) {
     tp_obj r=tp_None;
-    tp_frame(tp,globals,(void*)code.string.val,&r);
+    tp_frame(tp,globals,(tp_code*)code.string.val,&r);
     tp_run(tp,tp->cur);
     return r;
 }

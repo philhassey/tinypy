@@ -1,6 +1,6 @@
 tp_obj tp_string_t(TP, int n) {
     tp_obj r = tp_string_n(0,n);
-    r.string.info = tp_malloc(sizeof(_tp_string)+n);
+    r.string.info = (_tp_string*)tp_malloc(sizeof(_tp_string)+n);
     r.string.val = r.string.info->s;
     return r;
 }
