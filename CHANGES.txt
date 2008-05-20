@@ -28,3 +28,4 @@
     isn't always required
 * applied const correctness patch from allefant
 * fixed memory leak in list & dict copy functions
+* improved kwargs support

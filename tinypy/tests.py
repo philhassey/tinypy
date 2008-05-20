@@ -698,11 +698,24 @@ test(x='OK')
 
     # test register allocator
     s = "def f():pass\n"+("f()\n"*256)+"print('OK')"
+    t_render(s,"OK")
     
     t_render("print(2**3)","8")
     t_render("print(2*3**2)", "18", False)
     
-    t_render(s,"OK")
+    
+    t_render("""
+def test(**v): return 'OK'
+print(test())
+"""
+,"OK")
+    t_render("""
+def test(**v):
+    v['x'] = 'OK'
+    return v
+print(test()['x'])
+"""
+,"OK")
 
 ################################################################################
 

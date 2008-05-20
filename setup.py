@@ -80,6 +80,7 @@ def vars_linux():
     VARS['$SYS'] = '-linux'
     VARS['$FLAGS'] = ''
     VARS['$WFLAGS'] = '-Wwrite-strings -std=c89 -Wall'
+    # -Wc++-compat
     
     if 'pygame' in MODULES:
         VARS['$FLAGS'] += ' `sdl-config --cflags --libs` '
@@ -236,7 +237,7 @@ def build_gcc():
         print("# OK - we'll try -O3 for extra speed ...")
         do_cmd("gcc $WFLAGS -O3 tpmain.c $FLAGS -lm -o tinypy")
         do_cmd('$TINYPY tests.py $SYS')
-    do_cmd("gcc -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
+    do_cmd("gcc $WFLAGS -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
     do_chdir('..')
     if TEST:
         test_mods('./build/tinypy $TESTS')

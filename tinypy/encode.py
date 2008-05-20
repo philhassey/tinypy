@@ -446,8 +446,9 @@ def do_def(tok,kls=None):
         free_tmp(tmp) #REG
     if d != None:
         e = do_local(d.items[0])
+        code(DICT,e,0,0)
         tmp = _do_none()
-        code(GET,e,r,tmp)
+        code(IGET,e,r,tmp)
         free_tmp(tmp) #REG
     free_tmp(do(items[2])) #REG
     D.end()
