@@ -5,6 +5,7 @@ VARS = {}
 TOPDIR = os.path.abspath(os.path.dirname(__file__))
 TEST = False
 CLEAN = False
+BOOT = False
 CORE = ['tokenize','parse','encode','py2bc']
 MODULES = []
 
@@ -14,9 +15,12 @@ def main():
         print HELP
         return
     
-    global TEST,CLEAN
+    global TEST,CLEAN,BOOT
     TEST = 'test' in sys.argv
-    CLEAN = TEST or 'clean' in sys.argv
+    CLEAN = 'clean' in sys.argv
+    BOOT = 'boot' in sys.argv
+    CLEAN = CLEAN or BOOT
+    TEST = TEST or BOOT
     
     get_libs()
     build_mymain()
@@ -52,8 +56,9 @@ Commands:
     install - install CPython module ***
     
 Options:
-    test - fully test tinypy during build
+    test - run tests during build
     clean - rebuild all .tpc during build
+    boot - bootstrap tinypy (best testing)
     math - build math module
     random - build random module *
     pygame - build pygame module **
@@ -217,23 +222,26 @@ def build_gcc():
     else:
         for mod in mods:
             py2bc('python py2bc.py $SRC $DEST -nopos',mod)
-    if TEST:
+    if BOOT:
         do_cmd('$VM tests.tpc $SYS')
         for mod in mods: py2bc('$VM py2bc.tpc $SRC $DEST',mod)
         build_bc()
         do_cmd("gcc -std=c89 -Wall -g tpmain.c $FLAGS -lm -o tinypy")
     #second pass - builts optimized binaries and stuff
-    if TEST:
+    if BOOT:
         do_cmd('$TINYPY tests.py $SYS')
         for mod in mods: py2bc('$TINYPY py2bc.py $SRC $DEST -nopos',mod)
     build_bc(True)
-    if TEST:
+    if BOOT:
         do_cmd("gcc -std=c89 -Wall -O2 tpmain.c $FLAGS -lm -o tinypy")
         do_cmd('$TINYPY tests.py $SYS')
         print("# OK - we'll try -O3 for extra speed ...")
         do_cmd("gcc -Wall -O3 tpmain.c $FLAGS -lm -o tinypy")
         do_cmd('$TINYPY tests.py $SYS')
     do_cmd("gcc -std=c89 -Wall -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
+    do_chdir('..')
+    if TEST:
+        test_mods('./build/tinypy $TESTS')
     print("# OK")
     
 def get_libs():
@@ -262,6 +270,13 @@ def build_mymain():
     f.write(out)
     f.close()
     return True
+    
+def test_mods(cmd):
+    for m in MODULES:
+        tests = os.path.join('modules',m,'tests.py')
+        if not os.path.exists(tests): continue
+        cmd = cmd.replace('$TESTS',tests)
+        do_cmd(cmd)
 
 def build_vs():
     # How to compile on windows with Visual Studio:

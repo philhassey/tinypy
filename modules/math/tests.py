@@ -173,4 +173,4 @@ testit('tan(-pi/4)', math.tan(-math.pi/4), -1)
 testit('tanh(0)', math.tanh(0), 0)
 testit('tanh(1)+tanh(-1)', math.tanh(1)+math.tanh(-1), 0)
 
-print("OK: math module test pass")
+#print("OK: math module test pass")
