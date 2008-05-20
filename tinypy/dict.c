@@ -125,7 +125,8 @@ _tp_dict *_tp_dict_new(void) {
 tp_obj _tp_dict_copy(TP,tp_obj rr) {
     tp_obj obj = {TP_DICT};
     _tp_dict *o = rr.dict.val;
-    _tp_dict *r = _tp_dict_new(); *r = *o;
+    _tp_dict *r = _tp_dict_new();
+    *r = *o; r->gci = 0;
     r->items = tp_malloc(sizeof(tp_item)*o->alloc);
     memcpy(r->items,o->items,sizeof(tp_item)*o->alloc);
     obj.dict.val = r;

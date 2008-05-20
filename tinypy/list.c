@@ -68,7 +68,8 @@ _tp_list *_tp_list_new(void) {
 tp_obj _tp_list_copy(TP, tp_obj rr) {
     tp_obj val = {TP_LIST};
     _tp_list *o = rr.list.val;
-    _tp_list *r = _tp_list_new(); *r = *o;
+    _tp_list *r = _tp_list_new();
+    *r = *o; r->gci = 0;
     r->items = tp_malloc(sizeof(tp_obj)*o->alloc);
     memcpy(r->items,o->items,sizeof(tp_obj)*o->alloc);
     val.list.val = r;
