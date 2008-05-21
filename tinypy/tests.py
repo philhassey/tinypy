@@ -626,6 +626,7 @@ test("K")
     
     t_render("print(int(round(1.5)))","2")
     t_render("print(ord('X'))","88")
+    t_render("print(ord(chr(128)))","128")
     #t_render("print(fsize('LICENSE.txt'))","181")
     t_render("print(int('ff',16))","255")
     t_render("""

@@ -105,7 +105,7 @@ tp_obj tp_chr(TP) {
 }
 tp_obj tp_ord(TP) {
     char const *s = TP_STR();
-    return tp_number(s[0]);
+    return tp_number((unsigned char)s[0]);
 }
 
 tp_obj tp_strip(TP) {
