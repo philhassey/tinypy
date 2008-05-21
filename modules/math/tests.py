@@ -9,8 +9,8 @@ import math
 
 def testit(name, value, expected):
     if abs(value-expected) > eps:
-        raise '%s returned %f, expected %f'%\
-              (name, value, expected)
+        msg = name + " returned " + str(value) + " expected " + str(expected)
+        raise msg
 
 #print 'constants'
 testit('pi', math.pi, 3.1415926)

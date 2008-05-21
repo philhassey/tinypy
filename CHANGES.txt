@@ -31,3 +31,4 @@
 * improved kwargs support
 * got it compiling with -Wc++-compat
 * applied ord patch from allefant
+* fixed mingw build

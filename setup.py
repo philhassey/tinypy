@@ -90,12 +90,12 @@ def vars_windows():
     VARS['$RM'] = 'del'
     VARS['$VM'] = 'vm'
     VARS['$TINYPY'] = 'tinypy'
-    VARS['$FLAGS'] = '-mwindows -lmingw32'
-    VARS['$WFLAGS'] = '-Wwrite-strings -std=c89 -Wall'
+    VARS['$FLAGS'] = '-lmingw32'
+    VARS['$WFLAGS'] = '-Wwrite-strings -Wall'
     VARS['$SYS'] = '-mingw32'
 
     if 'pygame' in MODULES:
-        VARS['$FLAGS'] += ' -lSDLmain -lSDL '
+        VARS['$FLAGS'] += ' -Ic:\\mingw\\include\\SDL -lSDLmain -lSDL '
 
 def do_cmd(cmd):
     for k,v in VARS.items():
@@ -241,7 +241,7 @@ def build_gcc():
     do_cmd("gcc $WFLAGS -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
     do_chdir('..')
     if TEST:
-        test_mods('./build/tinypy $TESTS')
+        test_mods(os.path.join('.','build','tinypy')+' $TESTS')
     print("# OK")
     
 def get_libs():
