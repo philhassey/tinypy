@@ -40,6 +40,7 @@ tp_obj tp_data(TP,int magic,void *v) {
     tp_obj r = {TP_DATA};
     r.data.info = (_tp_data*)tp_malloc(sizeof(_tp_data));
     r.data.val = v;
+    r.data.magic = magic;
     return tp_track(tp,r);
 }
 

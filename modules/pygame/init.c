@@ -15,13 +15,13 @@ Uint32 pygame_list_to_color(TP,tp_obj clr,SDL_Surface *s) {
 
 void pygame_surf_free(TP,tp_obj d) {
     if (d.data.magic != PYGAME_TYPE_SURF) { tp_raise(,"%s","not a surface"); }
-    SDL_FreeSurface(d.data.val);
+    SDL_FreeSurface((SDL_Surface*)d.data.val);
 }
 
 SDL_Surface *pygame_obj_to_surf(TP,tp_obj self) {
     tp_obj d = tp_get(tp,self,tp_string("__surf"));
     if (d.data.magic != PYGAME_TYPE_SURF) { tp_raise(0,"%s","not a surface"); }
-    return d.data.val;
+    return (SDL_Surface*)d.data.val;
 }
 
 
