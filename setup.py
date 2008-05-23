@@ -292,19 +292,19 @@ def build_vs():
     # msvcrt80.dll or statically link with C runtime by changing /MD to /MT.
     mods = CORE[:]; mods.append('tests')
     os.chdir(os.path.join(TOPDIR,'tinypy'))
-    do_cmd('cl vmmain.c /D "inline=" /Od /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe')
+    do_cmd('cl vmmain.c /Od /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe')
     do_cmd('python tests.py -win')
     for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
     do_cmd('vm.exe tests.tpc -win')
     for mod in mods: do_cmd('vm.exe py2bc.tpc %s.py %s.tpc'%(mod,mod))
     build_bc()
-    do_cmd('cl /Od tpmain.c /D "inline=" /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe')
+    do_cmd('cl /Od tpmain.c /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe')
     #second pass - builts optimized binaries and stuff
     do_cmd('tinypy.exe tests.py -win')
     for mod in mods: do_cmd('tinypy.exe py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
     build_bc(True)
-    do_cmd('cl /Os vmmain.c /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe /link /opt:ref /opt:icf')
-    do_cmd('cl /Os tpmain.c /D "inline=__inline" /D "NDEBUG" /Gy /GL /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe /link /opt:ref,icf /OPT:NOWIN98')
+    do_cmd('cl /Os vmmain.c /D "NDEBUG" /Gy /GL /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe /link /opt:ref /opt:icf')
+    do_cmd('cl /Os tpmain.c /D "NDEBUG" /Gy /GL /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe /link /opt:ref,icf /OPT:NOWIN98')
     do_cmd("tinypy.exe tests.py -win")
     do_cmd("dir *.exe")
 

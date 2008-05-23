@@ -17,7 +17,12 @@
 #endif
 
 #ifdef _MSC_VER
+#ifdef NDEBUG
 #define tp_inline __inline
+#else
+/* don't inline in debug builds (for easier debugging) */
+#define tp_inline
+#endif
 #endif
 
 #ifndef tp_inline
