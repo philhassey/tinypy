@@ -26,6 +26,8 @@ def _import(name):
     MODULES[name] = g
     exec(code,g)
     return g
+    
+    
 def _init():
     BUILTINS['compile'] = _compile
     BUILTINS['import'] = _import

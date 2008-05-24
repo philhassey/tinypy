@@ -1,3 +1,4 @@
+void tp_run(TP,int cur);
 
 tp_vm *_tp_init(void) {
     int i;
@@ -98,28 +99,33 @@ void tp_handle(TP) {
     exit(-1);
 }
 
-void _tp_call(TP,tp_obj *dest, tp_obj fnc, tp_obj params) {
-    if (fnc.type == TP_DICT) {
-        _tp_call(tp,dest,tp_get(tp,fnc,tp_string("__call__")),params);
-        return;
+tp_obj _tp_call(TP,tp_obj self, tp_obj params) {
+    if (self.type == TP_DICT) {
+        TP_META_BEGIN(self,"__call__");
+            _tp_list_insert(tp,params.list.val,0,self);
+            return _tp_call(tp,meta,params);
+        TP_META_END;
     }
-    if (fnc.type == TP_FNC && !(fnc.fnc.ftype&1)) {
-        *dest = _tp_tcall(tp,fnc);
-        tp_grey(tp,*dest);
-        return;
+    if (self.type == TP_FNC && !(self.fnc.ftype&1)) {
+        tp_obj r = _tp_tcall(tp,self);
+        tp_grey(tp,r);
+        return r;
     }
-    if (fnc.type == TP_FNC) {
-        tp_frame(tp,fnc.fnc.info->globals,(tp_code*)fnc.fnc.val,dest);
-        if ((fnc.fnc.ftype&2)) {
+    if (self.type == TP_FNC) {
+        tp_obj dest = tp_None;
+        tp_frame(tp,self.fnc.info->globals,(tp_code*)self.fnc.val,&dest);
+        if ((self.fnc.ftype&2)) {
             tp->frames[tp->cur].regs[0] = params;
-            _tp_list_insert(tp,params.list.val,0,fnc.fnc.info->self);
+            _tp_list_insert(tp,params.list.val,0,self.fnc.info->self);
         } else {
             tp->frames[tp->cur].regs[0] = params;
         }
-        return;
+        tp_run(tp,tp->cur);
+        return dest;
     }
-    tp_params_v(tp,1,fnc); tp_print(tp);
-    tp_raise(,"tp_call: %s is not callable",TP_CSTR(fnc));
+    tp_params_v(tp,1,self); tp_print(tp);
+    tp_raise(tp_None,"tp_call: %s is not callable",TP_CSTR(self));
+    
 }
 
 
@@ -165,8 +171,10 @@ int tp_step(TP) {
     tp_code *cur = f->cur;
     while(1) {
     tp_code e = *cur;
-/*     fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur-f->codes,tp_strings[e.i],VA,VB,VC);
-       int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,TP_CSTR(regs[i])); }*/
+    /*
+     fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur-f->codes,tp_strings[e.i],VA,VB,VC);
+       int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,TP_CSTR(regs[i])); }
+    */
     switch (e.i) {
         case TP_IEOF: tp_return(tp,tp_None); SR(0); break;
         case TP_IADD: RA = tp_add(tp,RB,RC); break;
@@ -213,7 +221,9 @@ int tp_step(TP) {
         case TP_ILEN: RA = tp_len(tp,RB); break;
         case TP_IJUMP: cur += SVBC; continue; break;
         case TP_ISETJMP: f->jmp = cur+SVBC; break;
-        case TP_ICALL: _tp_call(tp,&RA,RB,RC); cur++; SR(0); break;
+        case TP_ICALL:
+            f->cur = cur + 1;  RA = _tp_call(tp,RB,RC); GA;
+            return 0; break;
         case TP_IGGET:
             if (!tp_iget(tp,&RA,f->globals,RB)) {
                 RA = tp_get(tp,tp->builtins,RB); GA;
@@ -245,22 +255,25 @@ int tp_step(TP) {
     SR(0);
 }
 
-void tp_run(TP,int cur) {
-    if (tp->jmp) { tp_raise(,"tp_run(%d) called recusively",cur); }
-    tp->jmp = 1; if (setjmp(tp->buf)) { tp_handle(tp); }
+void _tp_run(TP,int cur) { 
+    tp->jmp += 1; if (setjmp(tp->buf)) { tp_handle(tp); }
     while (tp->cur >= cur && tp_step(tp) != -1);
-    tp->cur = cur-1; tp->jmp = 0;
+    tp->jmp -= 1;
+}
+
+void tp_run(TP,int cur) {
+    jmp_buf tmp;
+    memcpy(tmp,tp->buf,sizeof(jmp_buf));
+    _tp_run(tp,cur);
+    memcpy(tp->buf,tmp,sizeof(jmp_buf));
 }
 
 
 tp_obj tp_call(TP, const char *mod, const char *fnc, tp_obj params) {
     tp_obj tmp;
-    tp_obj r = tp_None;
     tmp = tp_get(tp,tp->modules,tp_string(mod));
     tmp = tp_get(tp,tmp,tp_string(fnc));
-    _tp_call(tp,&r,tmp,params);
-    tp_run(tp,tp->cur);
-    return r;
+    return _tp_call(tp,tmp,params);
 }
 
 tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
@@ -326,11 +339,19 @@ void tp_builtins(TP) {
     {"load",tp_load}, {"fpack",tp_fpack}, {"abs",tp_abs},
     {"int",tp_int}, {"exec",tp_exec_}, {"exists",tp_exists},
     {"mtime",tp_mtime}, {"number",tp_float}, {"round",tp_round},
-    {"ord",tp_ord}, {"merge",tp_merge}, {0,0},
+    {"ord",tp_ord}, {"merge",tp_merge}, {"setmeta",tp_setmeta},
+    {"getraw",tp_getraw}, {"getmeta",tp_getmeta},
+    {0,0},
     };
     int i; for(i=0; b[i].s; i++) {
         tp_set(tp,tp->builtins,tp_string(b[i].s),tp_fnc(tp,(tp_obj (*)(tp_vm *))b[i].f));
     }
+    
+    /*
+    BUILTINS['ClassMeta'] = {'__call__':ClassMeta_call}
+    */
+    tp_set(tp,tp->builtins,tp_string("ClassMeta"),tp_dict_n(tp,1,(tp_obj[]){tp_string("__call__"),tp_fnc(tp,tp_ClassMeta_call)}));
+
 }
 
 

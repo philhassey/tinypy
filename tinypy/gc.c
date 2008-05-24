@@ -30,6 +30,7 @@ void tp_follow(TP,tp_obj v) {
             tp_grey(tp,v.dict.val->items[n].key);
             tp_grey(tp,v.dict.val->items[n].val);
         }
+        tp_grey(tp,v.dict.val->meta);
     }
     if (type == TP_FNC) {
         tp_grey(tp,v.fnc.info->self);

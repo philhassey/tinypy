@@ -1,3 +1,7 @@
+* added support for meta-methods (lua style): __get__, __set__, __call__
+    setmeta(dict,meta) getmeta(dict) getraw(dict) -> a dict that won't check
+    its meta-methods
+
 == 1.1 =========================================================================
 * applied patch by Dean Hall to fix several range() bugs
 * applied patch by Krzysztof Kowalczyk to add VS 2005, 2008 compatibility.

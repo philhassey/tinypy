@@ -193,7 +193,6 @@ def infix(i,tb,tc,r=None):
     free_tmp(c)
     return r
 def ss_infix(ss,i,tb,tc,r=None):
-    r = get_tmp(r)
     r2 = get_tmp()
     ss = _do_number(ss)
     t = get_tag()
@@ -473,76 +472,31 @@ def do_class(t):
         name = items[0].val
     else:
         name = items[0].items[0].val
-        parent = items[0].items[1].val
+        parent = items[0].items[1]
 
     kls = do(Token(t.pos,'dict',0,[]))
+    un_tmp(kls)
     ts = _do_string(name)
     code(GSET,ts,kls)
     free_tmp(ts) #REG
-
-    init,_new = False,[]
+    
     if parent:
-        _new.append(Token(t.pos,'call',None,[
-            Token(t.pos,'get',None,[
-                Token(t.pos,'name',parent),
-                Token(t.pos,'string','__new__'),
-                ]),
-            Token(t.pos,'name','self'),
-            ]))
+        free_tmp(do(Token(tok.pos,'symbol','=',[
+            Token(tok.pos,'get',None,[
+                Token(tok.pos,'reg',kls),
+                Token(tok.pos,'string','__parent__')]),
+            parent])))
 
     for fc in items[1].items:
         if fc.type != 'def': continue
-        fn = fc.items[0].val
-        if fn == '__init__': init = True
         do_def(fc,kls)
-        _new.append(Token(fc.pos,'symbol','=',[
-            Token(fc.pos,'get',None,[
-                Token(fc.pos,'name','self'),
-                Token(fc.pos,'string',fn)]),
-            Token(fc.pos,'call',None,[
-                Token(fc.pos,'name','bind'),
-                Token(fc.pos,'get',None,[
-                    Token(fc.pos,'name',name),
-                    Token(fc.pos,'string',fn)]),
-                Token(fc.pos,'name','self')])
-            ]))
-
-    do_def(Token(t.pos,'def',None,[
-        Token(t.pos,'name','__new__'),
-        Token(t.pos,'list',None,[Token(t.pos,'name','self')]),
-        Token(t.pos,'statements',None,_new)]),kls)
-
-    t = get_tag()
-    rf = fnc(t,'end')
-    D.begin()
-    params = do_local(Token(tok.pos,'name','__params'))
-
-    slf = do_local(Token(tok.pos,'name','self'))
-    code(DICT,slf,0,0)
-
+        
     free_tmp(do(Token(tok.pos,'call',None,[
-        Token(tok.pos,'get',None,[
-            Token(tok.pos,'name',name),
-            Token(tok.pos,'string','__new__')]),
-        Token(tok.pos,'name','self')]))) #REG
-
-    if init:
-        tmp = get_tmp()
-        t3 = _do_string('__init__')
-        code(GET,tmp,slf,t3)
-        t4 = get_tmp()
-        code(CALL,t4,tmp,params)
-        free_tmp(tmp) #REG
-        free_tmp(t3) #REG
-        free_tmp(t4) #REG
-    code(RETURN,slf)
-
-    D.end()
-    tag(t,'end')
-    ts = _do_string('__call__')
-    code(SET,kls,ts,rf)
-    free_tmp(kls) #REG
-    free_tmp(ts) #REG
+        Token(tok.pos,'name','setmeta'),
+        Token(tok.pos,'reg',kls),
+        Token(tok.pos,'name','ClassMeta')])))
+    
+    free_reg(kls) #REG
 
 
 

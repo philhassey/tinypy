@@ -62,6 +62,7 @@ typedef struct tp_list_ {
 typedef struct tp_dict_ {
     int type;
     struct _tp_dict *val;
+    int dtype;
 } tp_dict_;
 typedef struct tp_fnc_ {
     int type;
@@ -111,6 +112,7 @@ typedef struct _tp_dict {
     int cur;
     int mask;
     int used;
+    tp_obj meta;
 } _tp_dict;
 typedef struct _tp_fnc {
     int gci;

@@ -35,13 +35,14 @@ def clean(s):
     return s
 
 def tokenize(s):
+    global T
     s = clean(s)
-    try: return do_tokenize(s)
+    T,i,l = TData(),0,len(s)
+    try: return do_tokenize(s,i,l)
     except: u_error('tokenize',s,T.f)
 
-def do_tokenize(s):
+def do_tokenize(s,i,l):
     global T
-    T,i,l = TData(),0,len(s)
     T.f = (T.y,i-T.yi+1)
     while i < l:
         c = s[i]; T.f = (T.y,i-T.yi+1)

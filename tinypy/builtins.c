@@ -11,7 +11,7 @@ tp_obj tp_print(TP) {
 }
 
 tp_obj tp_bind(TP) {
-    tp_obj r = TP_OBJ();
+    tp_obj r = TP_TYPE(TP_FNC);
     tp_obj self = TP_OBJ();
     return tp_fnc_new(tp,r.fnc.ftype|2,r.fnc.val,self,r.fnc.info->globals);
 }
@@ -89,6 +89,7 @@ tp_obj tp_istype(TP) {
     if (strcmp("list",t) == 0) { return tp_number(v.type == TP_LIST); }
     if (strcmp("dict",t) == 0) { return tp_number(v.type == TP_DICT); }
     if (strcmp("number",t) == 0) { return tp_number(v.type == TP_NUMBER); }
+    if (strcmp("fnc",t) == 0) { return tp_number(v.type == TP_FNC); }
     tp_raise(tp_None,"is_type(%s,%s)",TP_CSTR(v),t);
 }
 
@@ -171,3 +172,82 @@ tp_obj tp_mtime(TP) {
     if (!stat(s,&stbuf)) { return tp_number(stbuf.st_mtime); }
     tp_raise(tp_None,"tp_mtime(%s)",s);
 }
+
+tp_obj tp_setmeta(TP) {
+    tp_obj self = TP_TYPE(TP_DICT);
+    tp_obj meta = TP_TYPE(TP_DICT);
+    self.dict.val->meta = meta;
+    return tp_None;
+}
+
+tp_obj tp_getmeta(TP) {
+    tp_obj self = TP_TYPE(TP_DICT);
+    return self.dict.val->meta;
+}
+
+tp_obj tp_getraw(TP) {
+    tp_obj self = TP_TYPE(TP_DICT);
+    self.dict.dtype = 0;
+    return self;
+}
+    
+    
+/*
+def ClassMeta_bind(klass,self):
+*/
+tp_obj tp_has(TP,tp_obj self, tp_obj k) ;
+void tp_ClassMeta_bind(TP,tp_obj klass,tp_obj self) {
+    int i;
+    
+    /*
+    if '__parent__' in klass:
+        ClassMeta_bind(klass.__parent__,self)
+    */
+    
+    if (tp_has(tp,klass,tp_string("__parent__")).number.val) {
+        tp_ClassMeta_bind(tp,tp_get(tp,klass,tp_string("__parent__")),self);
+    }
+    
+    /*
+    for k in klass:
+        v = klass[k]
+        if istype(v,'fnc'):
+            self[k] = bind(v,self)
+        else:
+            self[k] = v
+    */
+    
+    for (i=0; i<klass.dict.val->len; i++) {
+        int n = _tp_dict_next(tp,klass.dict.val);
+        tp_obj k = klass.dict.val->items[n].key;
+        tp_obj v = klass.dict.val->items[n].val;
+        if (v.type == TP_FNC) {
+            tp_set(tp,self,k,tp_fnc_new(tp,v.fnc.ftype|2,v.fnc.val,self,v.fnc.info->globals));
+        } else {
+            tp_set(tp,self,k,v);
+        }
+    }
+}
+tp_obj _tp_call(TP, tp_obj fnc, tp_obj params);
+
+/*
+def ClassMeta_call(klass,*p):
+*/
+tp_obj tp_ClassMeta_call(TP) {
+    tp_obj klass = TP_TYPE(TP_DICT);
+    
+    /*
+    self = {}
+    ClassMeta_bind(klass,self)
+    if '__init__' in self:
+        self.__init__(*p)
+    return self
+    */
+    tp_obj self = tp_dict(tp);
+    tp_ClassMeta_bind(tp,klass,self);
+    if (tp_has(tp,self,tp_string("__init__")).number.val) {
+        _tp_call(tp,tp_get(tp,self,tp_string("__init__")),tp->params);
+    }
+    return self;
+}
+

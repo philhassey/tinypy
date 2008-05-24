@@ -6,6 +6,7 @@ TOPDIR = os.path.abspath(os.path.dirname(__file__))
 TEST = False
 CLEAN = False
 BOOT = False
+DEBUG = False
 CORE = ['tokenize','parse','encode','py2bc']
 MODULES = []
 
@@ -15,10 +16,11 @@ def main():
         print HELP
         return
     
-    global TEST,CLEAN,BOOT
+    global TEST,CLEAN,BOOT,DEBUG
     TEST = 'test' in sys.argv
     CLEAN = 'clean' in sys.argv
     BOOT = 'boot' in sys.argv
+    DEBUG = 'debug' in sys.argv
     CLEAN = CLEAN or BOOT
     TEST = TEST or BOOT
     
@@ -59,6 +61,7 @@ Options:
     test - run tests during build
     clean - rebuild all .tpc during build
     boot - fully bootstrap and test tinypy
+    debug - build with debug options on
     
 Modules:
     math - build math module
@@ -213,6 +216,8 @@ def py2bc(cmd,mod):
 def build_gcc():
     mods = CORE[:]
     do_chdir(os.path.join(TOPDIR,'tinypy'))
+    nopos = ' -nopos '
+    if DEBUG: nopos = ''
     if TEST:
         mods.append('tests')
         do_cmd("gcc $WFLAGS -g vmmain.c $FLAGS -lm -o vm")
@@ -221,7 +226,7 @@ def build_gcc():
             py2bc('python py2bc.py $SRC $DEST',mod)
     else:
         for mod in mods:
-            py2bc('python py2bc.py $SRC $DEST -nopos',mod)
+            py2bc('python py2bc.py $SRC $DEST'+nopos,mod)
     if BOOT:
         do_cmd('$VM tests.tpc $SYS')
         for mod in mods: py2bc('$VM py2bc.tpc $SRC $DEST',mod)
@@ -230,7 +235,7 @@ def build_gcc():
     #second pass - builts optimized binaries and stuff
     if BOOT:
         do_cmd('$TINYPY tests.py $SYS')
-        for mod in mods: py2bc('$TINYPY py2bc.py $SRC $DEST -nopos',mod)
+        for mod in mods: py2bc('$TINYPY py2bc.py $SRC $DEST'+nopos,mod)
     build_bc(True)
     if BOOT:
         do_cmd("gcc $WFLAGS -O2 tpmain.c $FLAGS -lm -o tinypy")

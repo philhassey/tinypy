@@ -130,6 +130,7 @@ tp_obj _tp_dict_copy(TP,tp_obj rr) {
     r->items = (tp_item*)tp_malloc(sizeof(tp_item)*o->alloc);
     memcpy(r->items,o->items,sizeof(tp_item)*o->alloc);
     obj.dict.val = r;
+    obj.dict.dtype = 1;
     return tp_track(tp,obj);
 }
 
@@ -157,6 +158,7 @@ tp_obj tp_merge(TP) {
 tp_obj tp_dict(TP) {
     tp_obj r = {TP_DICT};
     r.dict.val = _tp_dict_new();
+    r.dict.dtype = 1;
     return tp ? tp_track(tp,r) : r;
 }
 

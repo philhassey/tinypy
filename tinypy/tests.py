@@ -535,7 +535,8 @@ test('O')
     t_render("""a,b,d = [0],0,'OK'; print(d)""","OK")
     
     t_render("""
-def test(): raise
+def test():
+    raise
 try:
     test()
 except:
@@ -634,7 +635,7 @@ def test(x,y): print(x); return y
 test('a',1) or test('b',1) and test('c',0)
 ""","a")
 
-    t_render("def test(): print('OK')\n{'__call__':test}()","OK")
+    #t_render("def test(): print('OK')\n{'__call__':test}()","OK")
 
     t_render("""
 class A:
@@ -717,6 +718,116 @@ def test(**v):
 print(test()['x'])
 """
 ,"OK")
+
+    t_render("""
+def get(self,k):
+    return k+"K"
+m = {"__get__":get}
+v = {}
+setmeta(v,m)
+print(v.O)
+"""
+,"OK")
+
+    t_render("""
+def set(self,k,v):
+    self = getraw(self)
+    self[k] = v + "K"
+m = {"__set__":set}
+v = {}
+setmeta(v,m)
+v.x = "O"
+print(v.x)
+"""
+,"OK")
+
+    t_render("""
+m = {"test":"OK"}
+v = {}
+setmeta(v,m)
+print(getmeta(v)["test"])
+""",
+"OK")
+
+    t_render("""
+def call(self,x):
+    print(x)
+m = {"__call__":call}
+v = {}
+setmeta(v,m)
+v("OK")
+"""
+,"OK")
+
+
+    #a REG related test
+    t_render("""
+def test():
+    init = True
+    if init and True:
+        pass
+print("OK")
+""","OK")
+
+
+    meta_objs_init = """
+def MyObj_bind(klass,self):
+    if '__parent__' in klass:
+        MyObj_bind(klass.__parent__,self)
+    for k in klass:
+        v = klass[k]
+        if istype(v,'fnc'):
+            self[k] = bind(v,self)
+        else:
+            self[k] = v
+def MyObj_call(klass,*p):
+    self = {}
+    MyObj_bind(klass,self)
+    if '__init__' in self:
+        self.__init__(*p)
+    return self
+MyObj = {'__call__':MyObj_call}
+
+def A_init(self,v):
+    if v: print("A_init")
+def A_test1(self):
+    print("A_test1")
+def A_test2(self):
+    print("A_test2")
+A = {'__init__':A_init,'test1':A_test1,'test2':A_test2}
+setmeta(A,MyObj)
+
+def B_init(self,v):
+    if v: print("B_init")
+def B_test2(self):
+    print("B_test2")
+B = {'__parent__':A,'__init__':B_init,'test2':B_test2}
+setmeta(B,MyObj)
+
+"""
+
+    t_render(meta_objs_init+"""A(True)""","A_init")
+    t_render(meta_objs_init+"""A(False).test1()""","A_test1")
+    t_render(meta_objs_init+"""A(False).test2()""","A_test2")
+    t_render(meta_objs_init+"""B(True)""","B_init")
+    t_render(meta_objs_init+"""B(False).test1()""","A_test1")
+    t_render(meta_objs_init+"""B(False).test2()""","B_test2")
+
+    #test that you can make a callable meta object
+    t_render("""
+class TestMeta:
+    def __call__(self):
+        self = getraw(self)
+        print(self.value)
+
+class Test:
+    def __init__(self,value):
+        self.value = value
+        setmeta(self,TestMeta)
+
+x = Test('OK')
+x()
+""","OK")
 
 ################################################################################
 
