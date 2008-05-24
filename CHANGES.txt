@@ -1,6 +1,7 @@
 * added support for meta-methods (lua style): __get__, __set__, __call__
     setmeta(dict,meta) getmeta(dict) getraw(dict) -> a dict that won't check
     its meta-methods
+* added some API testing to tests.py
 
 == 1.1 =========================================================================
 * applied patch by Dean Hall to fix several range() bugs

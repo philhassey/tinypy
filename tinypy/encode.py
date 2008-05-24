@@ -567,6 +567,7 @@ def do_try(t):
     t = get_tag()
     setjmp(t,'except')
     free_tmp(do(items[0])) #REG
+    code(SETJMP,0)
     jump(t,'end')
     tag(t,'except')
     free_tmp(do(items[1].items[1])) #REG

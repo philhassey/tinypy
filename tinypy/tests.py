@@ -829,6 +829,22 @@ x = Test('OK')
 x()
 ""","OK")
 
+    #test that exceptions are cleared after they are caught
+    #and not repeated
+    t_render("""
+def test():
+    try:
+        pass
+    except:
+        pass
+    print("OK")
+    raise
+try:
+    test()
+except:
+    pass
+""","OK")
+
 ################################################################################
 
 def t_boot(ss,ex,exact=True):
@@ -855,7 +871,117 @@ try:
 except:
     pass
 
+def t_api(ss_py,ss,ex):
+    if not '-linux' in ARGV:
+        return
+    
+    #first verify that the python code produces the result
+    t_render(ss_py,ex) 
+    
+    #then verify that the C code does ...
+    fname = "tmp.c"
+    system_rm("tmp.c")
+    system_rm("tmp")
+    system_rm(TMP)
+    save(fname,ss)
+    system("gcc tmp.c -lm -o tmp")
+    cmd = "./tmp > "+TMP
+    system(cmd)
+    res = load(TMP).strip()
+    if res != ex: showerror(cmd, ss, ex, res)
+    assert(res == ex)
+
 if is_boot == True and __name__ == '__main__':
     print("# t_boot")
     t_boot(["def test(): print('OK')","import tmp1; tmp1.test()"],"OK")
+
+    print("# t_api")
+    
+    # all t_api examples include a python equivalent
+    # also include a brief explanation of the point
+    # of the example
+    
+    # just a "hello world" style example
+    t_api("""
+print ("OK")
+""","""
+#include "tp.c"
+int main(int argc, char *argv[]) {
+    tp_vm *tp = tp_init(argc,argv);
+    
+    tp_params_v(tp,1,tp_string("OK"));
+    tp_print(tp);
+    
+    tp_deinit(tp);
+    return(0);
+}
+""",
+"OK")
+
+    # how to create a c function and call it
+    t_api("""
+def test(v):
+    print(v)
+test("OK")
+""","""
+#include "tp.c"
+tp_obj test(TP) {
+    tp_obj v = TP_OBJ();
+    tp_params_v(tp,1,v);
+    tp_print(tp);
+}
+int main(int argc, char *argv[]) {
+    tp_vm *tp = tp_init(argc,argv);
+    
+    tp_obj fnc = tp_fnc(tp,test);
+    tp_call(tp,fnc,tp_params_v(tp,1,tp_string("OK")));
+    
+    tp_deinit(tp);
+    return(0);
+}
+""",
+"OK")
+
+    # how to create a simple class
+    t_api("""
+class A:
+    def __init__(self,value):
+        self.value = value
+    def test(self):
+        print(self.value)
+A("OK").test()
+""","""
+
+#include "tp.c"
+tp_obj A_init(TP) {
+    tp_obj self = TP_TYPE(TP_DICT);
+    tp_obj v = TP_OBJ();
+    tp_set(tp,self,tp_string("value"),v);
+}
+tp_obj A_test(TP) {
+    tp_obj self = TP_TYPE(TP_DICT);
+    tp_obj v = tp_get(tp,self,tp_string("value"));
+    tp_params_v(tp,1,v);
+    tp_print(tp);
+}
+int main(int argc, char *argv[]) {
+    tp_vm *tp = tp_init(argc,argv);
+    
+    /* create our class */
+    tp_obj tmp;
+    tp_obj A = tp_dict(tp);
+    tp_set(tp,A,tp_string("__init__"),tp_fnc(tp,A_init));
+    tp_set(tp,A,tp_string("test"),tp_fnc(tp,A_test));
+    tp_params_v(tp,2,A,tp_get(tp,tp->builtins,tp_string("ClassMeta")));
+    tp_setmeta(tp);
+    
+    /* instantiate it and call test */
+    tmp = tp_call(tp,A,tp_params_v(tp,1,tp_string("OK")));
+    tp_call(tp,tp_get(tp,tmp,tp_string("test")),tp_params_v(tp,0));
+    
+    tp_deinit(tp);
+    return(0);
+}
+""",
+"OK")
 

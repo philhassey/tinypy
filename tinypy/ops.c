@@ -80,7 +80,7 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
     tp_obj r;
     if (type == TP_DICT) {
         TP_META_BEGIN(self,"__get__");
-            tp_obj p[] = {self,k}; return _tp_call(tp,meta,tp_list_n(tp,2,p));
+            return tp_call(tp,meta,tp_params_v(tp,2,self,k));
         TP_META_END;
         return _tp_dict_get(tp,self.dict.val,k,"tp_get");
     } else if (type == TP_LIST) {
@@ -176,7 +176,8 @@ void tp_set(TP,tp_obj self, tp_obj k, tp_obj v) {
 
     if (type == TP_DICT) {
         TP_META_BEGIN(self,"__set__");
-            tp_obj p[] = {self,k,v}; _tp_call(tp,meta,tp_list_n(tp,3,p)); return;
+            tp_call(tp,meta,tp_params_v(tp,3,self,k,v));
+            return;
         TP_META_END;
         _tp_dict_set(tp,self.dict.val,k,v);
         return;

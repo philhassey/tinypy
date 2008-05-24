@@ -221,7 +221,8 @@ def build_gcc():
     if TEST:
         mods.append('tests')
         do_cmd("gcc $WFLAGS -g vmmain.c $FLAGS -lm -o vm")
-        do_cmd('python tests.py $SYS')
+        if BOOT:
+            do_cmd('python tests.py $SYS')
         for mod in mods:
             py2bc('python py2bc.py $SRC $DEST',mod)
     else:
@@ -243,10 +244,15 @@ def build_gcc():
         print("# OK - we'll try -O3 for extra speed ...")
         do_cmd("gcc $WFLAGS -O3 tpmain.c $FLAGS -lm -o tinypy")
         do_cmd('$TINYPY tests.py $SYS')
-    do_cmd("gcc $WFLAGS -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
-    do_chdir('..')
+    if DEBUG:
+        do_cmd("gcc $WFLAGS -g mymain.c $FLAGS -lm -o ../build/tinypy")
+    else:
+        do_cmd("gcc $WFLAGS -O3 mymain.c $FLAGS -lm -o ../build/tinypy")
     if TEST:
-        test_mods(os.path.join('.','build','tinypy')+' $TESTS')
+        do_cmd(os.path.join('..','build','tinypy')+' tests.py $SYS')
+        test_mods(os.path.join('..','build','tinypy')+' $TESTS')
+    
+    do_chdir('..')
     print("# OK")
     
 def get_libs():

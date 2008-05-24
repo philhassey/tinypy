@@ -99,11 +99,15 @@ void tp_handle(TP) {
     exit(-1);
 }
 
-tp_obj _tp_call(TP,tp_obj self, tp_obj params) {
+tp_obj tp_call(TP,tp_obj self, tp_obj params) {
+    /* I'm not sure we should have to do this, but
+    just for giggles we will. */
+    tp->params = params;
+    
     if (self.type == TP_DICT) {
         TP_META_BEGIN(self,"__call__");
             _tp_list_insert(tp,params.list.val,0,self);
-            return _tp_call(tp,meta,params);
+            return tp_call(tp,meta,params);
         TP_META_END;
     }
     if (self.type == TP_FNC && !(self.fnc.ftype&1)) {
@@ -220,9 +224,9 @@ int tp_step(TP) {
         case TP_IPARAMS: RA = tp_params_n(tp,VC,&RB); break;
         case TP_ILEN: RA = tp_len(tp,RB); break;
         case TP_IJUMP: cur += SVBC; continue; break;
-        case TP_ISETJMP: f->jmp = cur+SVBC; break;
+        case TP_ISETJMP: f->jmp = SVBC?cur+SVBC:0; break;
         case TP_ICALL:
-            f->cur = cur + 1;  RA = _tp_call(tp,RB,RC); GA;
+            f->cur = cur + 1;  RA = tp_call(tp,RB,RC); GA;
             return 0; break;
         case TP_IGGET:
             if (!tp_iget(tp,&RA,f->globals,RB)) {
@@ -269,11 +273,11 @@ void tp_run(TP,int cur) {
 }
 
 
-tp_obj tp_call(TP, const char *mod, const char *fnc, tp_obj params) {
+tp_obj tp_ez_call(TP, const char *mod, const char *fnc, tp_obj params) {
     tp_obj tmp;
     tmp = tp_get(tp,tp->modules,tp_string(mod));
     tmp = tp_get(tp,tmp,tp_string(fnc));
-    return _tp_call(tp,tmp,params);
+    return tp_call(tp,tmp,params);
 }
 
 tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
@@ -281,7 +285,7 @@ tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
     tp_obj g;
 
     if (!((fname && strstr(fname,".tpc")) || codes)) {
-        return tp_call(tp,"py2bc","import_fname",tp_params_v(tp,2,tp_string(fname),tp_string(name)));
+        return tp_ez_call(tp,"py2bc","import_fname",tp_params_v(tp,2,tp_string(fname),tp_string(name)));
     }
 
     if (!codes) {
@@ -367,7 +371,7 @@ tp_obj tp_main(TP,char *fname, void *code) {
     return tp_import(tp,fname,"__main__",code);
 }
 tp_obj tp_compile(TP, tp_obj text, tp_obj fname) {
-    return tp_call(tp,"BUILTINS","compile",tp_params_v(tp,2,text,fname));
+    return tp_ez_call(tp,"BUILTINS","compile",tp_params_v(tp,2,text,fname));
 }
 
 tp_obj tp_exec(TP,tp_obj code, tp_obj globals) {

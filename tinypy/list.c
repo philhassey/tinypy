@@ -70,8 +70,8 @@ tp_obj _tp_list_copy(TP, tp_obj rr) {
     _tp_list *o = rr.list.val;
     _tp_list *r = _tp_list_new();
     *r = *o; r->gci = 0;
-    r->items = (tp_obj*)tp_malloc(sizeof(tp_obj)*o->alloc);
-    memcpy(r->items,o->items,sizeof(tp_obj)*o->alloc);
+    r->items = (tp_obj*)tp_malloc(sizeof(tp_obj)*o->len);
+    memcpy(r->items,o->items,sizeof(tp_obj)*o->len);
     val.list.val = r;
     return tp_track(tp,val);
 }

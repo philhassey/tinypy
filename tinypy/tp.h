@@ -190,6 +190,7 @@ void _tp_raise(TP,tp_obj);
 tp_obj tp_printf(TP,char const *fmt,...);
 tp_obj tp_track(TP,tp_obj);
 void tp_grey(TP,tp_obj);
+tp_obj tp_call(TP, tp_obj fnc, tp_obj params);
 
 /* __func__ __VA_ARGS__ __FILE__ __LINE__ */
 #define tp_raise(r,fmt,...) { \

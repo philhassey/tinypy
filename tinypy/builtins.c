@@ -228,7 +228,6 @@ void tp_ClassMeta_bind(TP,tp_obj klass,tp_obj self) {
         }
     }
 }
-tp_obj _tp_call(TP, tp_obj fnc, tp_obj params);
 
 /*
 def ClassMeta_call(klass,*p):
@@ -246,7 +245,7 @@ tp_obj tp_ClassMeta_call(TP) {
     tp_obj self = tp_dict(tp);
     tp_ClassMeta_bind(tp,klass,self);
     if (tp_has(tp,self,tp_string("__init__")).number.val) {
-        _tp_call(tp,tp_get(tp,self,tp_string("__init__")),tp->params);
+        tp_call(tp,tp_get(tp,self,tp_string("__init__")),tp->params);
     }
     return self;
 }
