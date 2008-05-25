@@ -2,6 +2,7 @@
     setmeta(dict,meta) getmeta(dict) getraw(dict) -> a dict that won't check
     its meta-methods
 * added some API testing to tests.py
+* applied OSX setup.py patch by Atul Varma
 
 == 1.1 =========================================================================
 * applied patch by Dean Hall to fix several range() bugs

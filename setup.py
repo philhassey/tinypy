@@ -31,6 +31,9 @@ def main():
     if cmd == 'linux':
         vars_linux()
         build_gcc()
+    elif cmd == 'osx':
+        vars_osx()
+        build_gcc()
     elif cmd == 'mingw':
         vars_windows()
         build_gcc()
@@ -48,6 +51,7 @@ python setup.py command [options] [modules]
 
 Commands:
     linux - build tinypy for linux
+    osx - build tinypy for OS X
     mingw - build tinypy for mingw under windows
     vs - build tinypy using Visual Studio 2005 / 2008
     
@@ -75,6 +79,18 @@ Modules:
 ** proof-of-concept included
 *** vaporware
 """
+
+def vars_osx():
+    VARS['$RM'] = 'rm -f'
+    VARS['$VM'] = './vm'
+    VARS['$TINYPY'] = './tinypy'
+    VARS['$SYS'] = '-osx'
+    VARS['$FLAGS'] = ''
+    
+    VARS['$WFLAGS'] = '-std=c89 -Wall'
+    
+    if 'pygame' in MODULES:
+        VARS['$FLAGS'] += ' `sdl-config --cflags --libs` '
 
 def vars_linux():
     VARS['$RM'] = 'rm -f'
