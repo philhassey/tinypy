@@ -845,6 +845,15 @@ except:
     pass
 ""","OK")
 
+    #tests issue 14: string.index() should give an exception if substring not found
+    t_render("""
+try:
+    "test-".index("=")
+except:
+    print("OK")
+""","OK")
+
+
 ################################################################################
 
 def t_boot(ss,ex,exact=True):
