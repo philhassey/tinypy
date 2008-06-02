@@ -174,7 +174,6 @@ typedef struct _tp_data {
     void (*free)(TP,tp_obj);
 } _tp_data;
 
-/* NOTE: these are the few out of namespace items for convenience*/
 #define tp_True tp_number(1)
 #define tp_False tp_number(0)
 #define TP_CSTR(v) ((tp_str(tp,(v))).string.val)
