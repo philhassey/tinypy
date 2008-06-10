@@ -1,3 +1,6 @@
+/* File: VM
+ * Functionality pertaining to the virtual machine.
+ */
 void tp_run(TP,int cur);
 
 tp_vm *_tp_init(void) {
@@ -27,6 +30,14 @@ tp_vm *_tp_init(void) {
     return tp;
 }
 
+
+/* Function: tp_deinit
+ * Destroys a VM instance.
+ * 
+ * When you no longer need an instance of tinypy, you can use this to free all
+ * memory used by it. Even when you are using only a single tinypy instance, it
+ * may be good practice to call this function on shutdown.
+ */
 void tp_deinit(TP) {
     while (tp->root.list.val->len) {
         _tp_list_pop(tp,tp->root.list.val,0,"tp_deinit");
@@ -280,6 +291,17 @@ tp_obj tp_ez_call(TP, const char *mod, const char *fnc, tp_obj params) {
     return tp_call(tp,tmp,params);
 }
 
+/* Function: tp_import
+ * Imports a module.
+ * 
+ * Parameters:
+ * fname - The filename of a file containing the module's code.
+ * name - The name of the module.
+ * codes - The module's code. If this is given, fname is ignored.
+ *
+ * Returns:
+ * The module object.
+ */
 tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
     tp_obj code = tp_None;
     tp_obj g;
@@ -386,6 +408,15 @@ tp_obj tp_eval(TP, char *text, tp_obj globals) {
     return tp_exec(tp,code,globals);
 }
 
+/* Function: tp_init
+ * Initializes a new virtual machine.
+ *
+ * The given parameters have the same format as the parameters to main, and
+ * allow passing arguments to your tinypy scripts.
+ *
+ * Returns:
+ * The newly created tinypy instance.
+ */
 tp_vm *tp_init(int argc, char *argv[]) {
     tp_vm *tp = _tp_init();
     tp_builtins(tp);

@@ -1,3 +1,6 @@
+/* File: Helpers
+ * From tp.h.
+ */
 #ifndef TP_H
 #define TP_H
 
@@ -192,6 +195,13 @@ void tp_grey(TP,tp_obj);
 tp_obj tp_call(TP, tp_obj fnc, tp_obj params);
 
 /* __func__ __VA_ARGS__ __FILE__ __LINE__ */
+
+/* Function: tp_raise
+ * Macro to raise an exception.
+ * 
+ * This macro will return from the current function returning "r". The
+ * remaining parameters are used to format the exception message.
+ */
 #define tp_raise(r,fmt,...) { \
     _tp_raise(tp,tp_printf(tp,fmt,__VA_ARGS__)); \
     return r; \
@@ -216,12 +226,23 @@ tp_inline static int _tp_min(int a, int b) { return (a<b?a:b); }
 tp_inline static int _tp_max(int a, int b) { return (a>b?a:b); }
 tp_inline static int _tp_sign(tp_num v) { return (v<0?-1:(v>0?1:0)); }
 
+/* Function: tp_number
+ * Creates a new numeric object.
+ */
 tp_inline static tp_obj tp_number(tp_num v) {
     tp_obj val = {TP_NUMBER};
     val.number.val = v;
     return val;
 }
 
+/* Function: tp_string
+ * Creates a new string object from a C string.
+ * 
+ * Given a pointer to a C string, creates a tinypy object representing the
+ * same string.
+ * 
+ * TODO: Can the string be deleted after passing it to this function?
+ */
 tp_inline static tp_obj tp_string(char const *v) {
     tp_obj val;
     tp_string_ s = {TP_STRING, 0, v, 0};
@@ -230,6 +251,12 @@ tp_inline static tp_obj tp_string(char const *v) {
     return val;
 }
 
+/* Function: tp_string_n
+ * Creates a new string object from a partial C string.
+ * 
+ * Like <tp_string>, but you specify how many bytes of the given C string to
+ * use for the string object.
+ */
 tp_inline static tp_obj tp_string_n(char const *v,int n) {
     tp_obj val;
     tp_string_ s = {TP_STRING, 0,v,n};

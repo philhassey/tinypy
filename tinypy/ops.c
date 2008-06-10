@@ -1,3 +1,6 @@
+/* File: Operations
+ * Various tinypy operations.
+ */
 #define TP_META_BEGIN(self,name) \
     if (self.dict.dtype && self.dict.val->meta.type != TP_NONE) { \
         int n = _tp_dict_find(tp,self.dict.val->meta.dict.val,tp_string(name)); \
@@ -75,6 +78,12 @@ tp_obj tp_iter(TP,tp_obj self, tp_obj k) {
 }
 
 
+/* Function: tp_get
+ * Attribute lookup.
+ * 
+ * This returns the result of using self[k] in actual code. It works for
+ * dictionaries (including classes and instantiated objects), lists and strings.
+ */
 tp_obj tp_get(TP,tp_obj self, tp_obj k) {
     int type = self.type;
     tp_obj r;
@@ -171,6 +180,12 @@ int tp_iget(TP,tp_obj *r, tp_obj self, tp_obj k) {
     return 1;
 }
 
+/* Function: tp_set
+ * Attribute modification.
+ * 
+ * This is the counterpart of tp_get, it does the same as self[k] = v would do
+ * in actual tinypy code.
+ */
 void tp_set(TP,tp_obj self, tp_obj k, tp_obj v) {
     int type = self.type;
 
