@@ -470,6 +470,7 @@ def do_class(t):
     parent = None
     if items[0].type == 'name':
         name = items[0].val
+        parent = Token(tok.pos,'name','object')
     else:
         name = items[0].items[0].val
         parent = items[0].items[1]
@@ -480,22 +481,15 @@ def do_class(t):
     code(GSET,ts,kls)
     free_tmp(ts) #REG
     
-    if parent:
-        free_tmp(do(Token(tok.pos,'symbol','=',[
-            Token(tok.pos,'get',None,[
-                Token(tok.pos,'reg',kls),
-                Token(tok.pos,'string','__parent__')]),
-            parent])))
-
+    free_tmp(do(Token(tok.pos,'call',None,[
+        Token(tok.pos,'name','setmeta'),
+        Token(tok.pos,'reg',kls),
+        parent])))
+        
     for fc in items[1].items:
         if fc.type != 'def': continue
         do_def(fc,kls)
         
-    free_tmp(do(Token(tok.pos,'call',None,[
-        Token(tok.pos,'name','setmeta'),
-        Token(tok.pos,'reg',kls),
-        Token(tok.pos,'name','ClassMeta')])))
-    
     free_reg(kls) #REG
 
 

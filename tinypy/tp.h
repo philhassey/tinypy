@@ -185,6 +185,7 @@ extern tp_obj tp_None;
 
 void tp_set(TP,tp_obj,tp_obj,tp_obj);
 tp_obj tp_get(TP,tp_obj,tp_obj);
+tp_obj tp_has(TP,tp_obj self, tp_obj k);
 tp_obj tp_len(TP,tp_obj);
 tp_obj tp_str(TP,tp_obj);
 int tp_cmp(TP,tp_obj,tp_obj);

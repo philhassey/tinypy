@@ -442,13 +442,6 @@ fnc()
 """
 ,"OK")
 
-    t_render("""
-class C:
-    def __init__(self,data): self.data = data
-    def print(self): print(self.data)
-C("OK").print()
-"""
-,"OK")
 
     t_render("""
 x = [v*v for v in range(0,5)]
@@ -582,22 +575,6 @@ test()
 print(x)
 ""","OK")
 
-    t_render("""
-class X:
-    pass
-y = X()
-print("OK")
-""","OK")
-
-    t_render("""
-class X: pass
-def test(): y = X()
-test()
-print("OK")
-""","OK")
-
-    t_render(["class X: pass\ndef test(): y = X()","import tmp1\ntmp1.test();print('OK')"],"OK")
-    
     t_render("print(len([1,2,3]))","3")
     
     t_render('if not "?" in "xyz": print("OK")',"OK")
@@ -637,28 +614,6 @@ test('a',1) or test('b',1) and test('c',0)
 
     #t_render("def test(): print('OK')\n{'__call__':test}()","OK")
 
-    t_render("""
-class A:
-    def __init__(self):
-        self.a = 'O'
-        self.b = 'x'
-    def test(self):
-        print("KO")
-class B(A):
-    def __init__(self):
-        A.__init__(self)
-        self.b = 'K'
-    def test(self):
-        print(self.a+self.b)
-B().test()
-""","OK")
-
-    t_render("""
-class A:
-    def test(self):
-        print(self)
-A.test("OK")
-""","OK")
 
     t_render("""
 def test():
@@ -722,39 +677,28 @@ print(test()['x'])
     t_render("""
 def get(self,k):
     return k+"K"
-m = {"__get__":get}
-v = {}
-setmeta(v,m)
+v = object()
+v.__get__ = bind(get,v)
 print(v.O)
-"""
-,"OK")
+""",
+"OK")
 
     t_render("""
 def set(self,k,v):
     self = getraw(self)
     self[k] = v + "K"
-m = {"__set__":set}
-v = {}
-setmeta(v,m)
+v = object()
+v.__set__ = bind(set,v)
 v.x = "O"
 print(v.x)
-"""
-,"OK")
-
-    t_render("""
-m = {"test":"OK"}
-v = {}
-setmeta(v,m)
-print(getmeta(v)["test"])
 """,
 "OK")
 
     t_render("""
 def call(self,x):
     print(x)
-m = {"__call__":call}
-v = {}
-setmeta(v,m)
+v = object()
+v.__call__ = bind(call,v)
 v("OK")
 """
 ,"OK")
@@ -769,24 +713,12 @@ def test():
 print("OK")
 ""","OK")
 
-
     meta_objs_init = """
-def MyObj_bind(klass,self):
-    if '__parent__' in klass:
-        MyObj_bind(klass.__parent__,self)
-    for k in klass:
-        v = klass[k]
-        if istype(v,'fnc'):
-            self[k] = bind(v,self)
-        else:
-            self[k] = v
-def MyObj_call(klass,*p):
-    self = {}
-    MyObj_bind(klass,self)
-    if '__init__' in self:
-        self.__init__(*p)
+def my_new(klass,*p):
+    self = object()
+    setmeta(self,klass)
+    self.__init__(*p)
     return self
-MyObj = {'__call__':MyObj_call}
 
 def A_init(self,v):
     if v: print("A_init")
@@ -794,16 +726,14 @@ def A_test1(self):
     print("A_test1")
 def A_test2(self):
     print("A_test2")
-A = {'__init__':A_init,'test1':A_test1,'test2':A_test2}
-setmeta(A,MyObj)
+A = {'__new__':my_new,'__init__':A_init,'test1':A_test1,'test2':A_test2}
 
 def B_init(self,v):
     if v: print("B_init")
 def B_test2(self):
     print("B_test2")
-B = {'__parent__':A,'__init__':B_init,'test2':B_test2}
-setmeta(B,MyObj)
-
+B = {'__init__':B_init,'test2':B_test2}
+setmeta(B,A)
 """
 
     t_render(meta_objs_init+"""A(True)""","A_init")
@@ -813,20 +743,83 @@ setmeta(B,MyObj)
     t_render(meta_objs_init+"""B(False).test1()""","A_test1")
     t_render(meta_objs_init+"""B(False).test2()""","B_test2")
 
-    #test that you can make a callable meta object
+    #various class construct use tests
     t_render("""
-class TestMeta:
-    def __call__(self):
-        self = getraw(self)
-        print(self.value)
+class C:
+    def __init__(self,data): self.data = data
+    def print(self): print(self.data)
+C("OK").print()
+"""
+,"OK")
 
+    t_render("""
+class X:
+    pass
+y = X()
+print("OK")
+""","OK")
+
+    t_render("""
+class X: pass
+def test(): y = X()
+test()
+print("OK")
+""","OK")
+
+    t_render(["class X: pass\ndef test(): y = X()","import tmp1\ntmp1.test();print('OK')"],"OK")
+
+    t_render("""
+class A:
+    def __init__(self):
+        self.a = 'O'
+        self.b = 'x'
+    def test(self):
+        print("KO")
+class B(A):
+    def __init__(self):
+        A.__init__(self)
+        self.b = 'K'
+    def test(self):
+        print(self.a+self.b)
+B().test()
+""","OK")
+
+    t_render("""
+class A:
+    def test(self):
+        print(self)
+A.test("OK")
+""","OK")
+
+
+    #test that you can make a callable object
+    t_render("""
 class Test:
-    def __init__(self,value):
-        self.value = value
-        setmeta(self,TestMeta)
+    def __init__(self,v):
+        self.value = v
+    def __call__(self):
+        print(self.value)
 
 x = Test('OK')
 x()
+""","OK")
+
+    #test that you can use a __get__
+    t_render("""
+class Test:
+    def __get__(self,k):
+        return k+"K"
+x = Test()
+print(x.O)
+""","OK")
+    #test that you can use __set__
+    t_render("""
+class Test:
+    def __set__(self,k,v):
+        getraw(self)[k] = "O"+v
+x = Test()
+x.v = "K"
+print(x.v)
 ""","OK")
 
     #test that exceptions are cleared after they are caught
@@ -843,6 +836,60 @@ try:
     test()
 except:
     pass
+""","OK")
+
+    #check that missing attributes throw an error
+    t_render("""
+class A: pass
+try:
+    A().x
+except:
+    print('OK')
+""","OK")
+
+    #check that a changed attribute gets changed
+    t_render("""
+class A:
+    def x(self): pass
+a = A()
+a.x = "OK"
+print(a.x)
+""","OK")
+    
+    #test that you can use a __get__ gets inherited
+    t_render("""
+class A:
+    def __get__(self,k):
+        return k+"K"
+class B(A):
+    pass
+x = B()
+print(x.O)
+""","OK")
+
+    #test that meta methods aren't called on non-objects
+    t_render("""
+def get(): pass
+x = {"__get__":get}
+try:
+    z = x.y
+except:
+    print("OK")
+""","OK")
+
+    #test that meta stuff is inheritited in dicts
+    t_render("""
+x = {1:"O"}
+y = {2:"K"}
+setmeta(y,x)
+print(y[1]+y[2])
+""","OK")
+
+    #test that meta stuff doesn't change into methods in dicts
+    t_render("""
+def get(k): return k
+x = {"get":get}
+print(x.get("OK"))
 ""","OK")
 
     #tests issue 14: string.index() should give an exception if substring not found
@@ -978,11 +1025,9 @@ int main(int argc, char *argv[]) {
     
     /* create our class */
     tp_obj tmp;
-    tp_obj A = tp_dict(tp);
+    tp_obj A = tp_class(tp);
     tp_set(tp,A,tp_string("__init__"),tp_fnc(tp,A_init));
     tp_set(tp,A,tp_string("test"),tp_fnc(tp,A_test));
-    tp_params_v(tp,2,A,tp_get(tp,tp->builtins,tp_string("ClassMeta")));
-    tp_setmeta(tp);
     
     /* instantiate it and call test */
     tmp = tp_call(tp,A,tp_params_v(tp,1,tp_string("OK")));

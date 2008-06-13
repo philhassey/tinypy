@@ -116,10 +116,16 @@ tp_obj tp_call(TP,tp_obj self, tp_obj params) {
     tp->params = params;
     
     if (self.type == TP_DICT) {
-        TP_META_BEGIN(self,"__call__");
-            _tp_list_insert(tp,params.list.val,0,self);
-            return tp_call(tp,meta,params);
-        TP_META_END;
+        if (self.dict.dtype == 1) {
+            tp_obj meta; if (_tp_lookup(tp,self,tp_string("__new__"),&meta)) {
+                _tp_list_insert(tp,params.list.val,0,self);
+                return tp_call(tp,meta,params);
+            }
+        } else if (self.dict.dtype == 2) {
+            TP_META_BEGIN(self,"__call__");
+                return tp_call(tp,meta,params);
+            TP_META_END;
+        }
     }
     if (self.type == TP_FNC && !(self.fnc.ftype&1)) {
         tp_obj r = _tp_tcall(tp,self);
@@ -356,6 +362,7 @@ tp_obj tp_import_(TP) {
 }
 
 void tp_builtins(TP) {
+    tp_obj o;
     struct {const char *s;void *f;} b[] = {
     {"print",tp_print}, {"range",tp_range}, {"min",tp_min},
     {"max",tp_max}, {"bind",tp_bind}, {"copy",tp_copy},
@@ -365,19 +372,18 @@ void tp_builtins(TP) {
     {"load",tp_load}, {"fpack",tp_fpack}, {"abs",tp_abs},
     {"int",tp_int}, {"exec",tp_exec_}, {"exists",tp_exists},
     {"mtime",tp_mtime}, {"number",tp_float}, {"round",tp_round},
-    {"ord",tp_ord}, {"merge",tp_merge}, {"setmeta",tp_setmeta},
-    {"getraw",tp_getraw}, {"getmeta",tp_getmeta},
+    {"ord",tp_ord}, {"merge",tp_merge}, {"getraw",tp_getraw},
+    {"setmeta",tp_setmeta}, {"getmeta",tp_getmeta},
     {0,0},
     };
     int i; for(i=0; b[i].s; i++) {
         tp_set(tp,tp->builtins,tp_string(b[i].s),tp_fnc(tp,(tp_obj (*)(tp_vm *))b[i].f));
     }
     
-    /*
-    BUILTINS['ClassMeta'] = {'__call__':ClassMeta_call}
-    */
-    tp_set(tp,tp->builtins,tp_string("ClassMeta"),tp_dict_n(tp,1,(tp_obj[]){tp_string("__call__"),tp_fnc(tp,tp_ClassMeta_call)}));
-
+    o = tp_object(tp);
+    tp_set(tp,o,tp_string("__call__"),tp_fnc(tp,tp_object_call));
+    tp_set(tp,o,tp_string("__new__"),tp_fnc(tp,tp_object_new));
+    tp_set(tp,tp->builtins,tp_string("object"),o);
 }
 
 

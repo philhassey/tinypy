@@ -1,15 +1,6 @@
 /* File: Operations
  * Various tinypy operations.
  */
-#define TP_META_BEGIN(self,name) \
-    if (self.dict.dtype && self.dict.val->meta.type != TP_NONE) { \
-        int n = _tp_dict_find(tp,self.dict.val->meta.dict.val,tp_string(name)); \
-        if (n != -1) { \
-            tp_obj meta = self.dict.val->meta.dict.val->items[n].val;
-
-#define TP_META_END \
-        } \
-    }
 
 tp_obj tp_str(TP,tp_obj self) {
     int type = self.type;
@@ -89,8 +80,9 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
     tp_obj r;
     if (type == TP_DICT) {
         TP_META_BEGIN(self,"__get__");
-            return tp_call(tp,meta,tp_params_v(tp,2,self,k));
+            return tp_call(tp,meta,tp_params_v(tp,1,k));
         TP_META_END;
+        if (self.dict.dtype && _tp_lookup(tp,self,k,&r)) { return r; }
         return _tp_dict_get(tp,self.dict.val,k,"tp_get");
     } else if (type == TP_LIST) {
         if (k.type == TP_NUMBER) {
@@ -191,7 +183,7 @@ void tp_set(TP,tp_obj self, tp_obj k, tp_obj v) {
 
     if (type == TP_DICT) {
         TP_META_BEGIN(self,"__set__");
-            tp_call(tp,meta,tp_params_v(tp,3,self,k,v));
+            tp_call(tp,meta,tp_params_v(tp,2,k,v));
             return;
         TP_META_END;
         _tp_dict_set(tp,self.dict.val,k,v);

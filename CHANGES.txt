@@ -4,6 +4,7 @@
 * added some API testing to tests.py
 * applied OSX setup.py patch by Atul Varma
 * fixed to issue #14 by Dean
+* updated meta-method patch to be more pythonic
 
 == 1.1 =========================================================================
 * applied patch by Dean Hall to fix several range() bugs
