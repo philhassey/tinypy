@@ -1,3 +1,7 @@
+/* File: Builtins
+ * Builtin tinypy functions.
+ */
+
 tp_obj tp_print(TP) {
     int n = 0;
     tp_obj e;
@@ -75,7 +79,11 @@ tp_obj tp_range(TP) {
     return r;
 }
 
-
+/* Function: tp_system
+ *
+ * The system builtin. A grave security flaw. If your version of tinypy
+ * enables this, you better remove it before deploying your app :P
+ */
 tp_obj tp_system(TP) {
     char const *s = TP_STR();
     int r = system(s);
@@ -196,7 +204,29 @@ int _tp_lookup(TP,tp_obj self, tp_obj k, tp_obj *meta) {
 #define TP_META_END \
         } \
     }
-    
+
+/* Function: tp_setmeta
+ * Set a "dict's meta".
+ *
+ * This is a builtin function, so you need to use <tp_params> to provide the
+ * parameters.
+ *
+ * In tinypy, each dictionary can have a so-called "meta" dictionary attached
+ * to it. When dictionary attributes are accessed, but not present in the
+ * dictionary, they instead are looked up in the meta dictionary. To get the
+ * raw dictionary, you can use <tp_getraw>.
+ *
+ * This function is particulary useful for objects and classes, which are just
+ * special dictionaries created with <tp_object> and <tp_class>. There you can
+ * use tp_setmeta to change the class of the object or parent class of a class.
+ *
+ * Parameters:
+ * self - The dictionary for which to set a meta.
+ * meta - The meta dictionary.
+ *
+ * Returns:
+ * None
+ */
 tp_obj tp_setmeta(TP) {
     tp_obj self = TP_TYPE(TP_DICT);
     tp_obj meta = TP_TYPE(TP_DICT);
@@ -209,6 +239,13 @@ tp_obj tp_getmeta(TP) {
     return self.dict.val->meta;
 }
 
+/* Function: tp_object
+ * Creates a new object.
+ *
+ * Returns:
+ * The newly created object. The object initially has no parent class, use
+ * <tp_setmeta> to set a class. Also see <tp_object_new>.
+ */
 tp_obj tp_object(TP) {
     tp_obj self = tp_dict(tp);
     self.dict.dtype = 2;
@@ -236,12 +273,29 @@ tp_obj tp_object_call(TP) {
     return self;
 }
 
+/* Function: tp_getraw
+ * Retrieve the raw dict of a dict.
+ *
+ * This builtin retrieves one dict parameter from tinypy, and returns its raw
+ * dict. This is very useful when implementing your own __get__ and __set__
+ * functions, as it allows you to directly access the attributes stored in the
+ * dict.
+ */
 tp_obj tp_getraw(TP) {
     tp_obj self = TP_TYPE(TP_DICT);
     self.dict.dtype = 0;
     return self;
 }
 
+/* Function: tp_class
+ * Creates a new base class.
+ *
+ * Parameters:
+ * none
+ *
+ * Returns:
+ * A new, empty class (derived from tinypy's builtin "object" class).
+ */
 tp_obj tp_class(TP) {
     tp_obj klass = tp_dict(tp);
     klass.dict.val->meta = tp_get(tp,tp->builtins,tp_string("object")); 

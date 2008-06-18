@@ -110,11 +110,28 @@ void tp_handle(TP) {
     exit(-1);
 }
 
+/* Function: tp_call
+ * Calls a tinypy function.
+ *
+ * Use this to call a tinypy function.
+ *
+ * Parameters:
+ * tp - The VM instance.
+ * self - The object to call.
+ * params - Parameters to pass.
+ *
+ * Example:
+ * > tp_call(tp,
+ * >     tp_get(tp, tp->builtins, tp_string("foo")),
+ * >     tp_params_v(tp, tp_string("hello")))
+ * This will look for a global function named "foo", then call it with a single
+ * positional parameter containing the string "hello".
+ */
 tp_obj tp_call(TP,tp_obj self, tp_obj params) {
     /* I'm not sure we should have to do this, but
     just for giggles we will. */
     tp->params = params;
-    
+
     if (self.type == TP_DICT) {
         if (self.dict.dtype == 1) {
             tp_obj meta; if (_tp_lookup(tp,self,tp_string("__new__"),&meta)) {
@@ -398,10 +415,18 @@ void tp_args(TP,int argc, char *argv[]) {
 tp_obj tp_main(TP,char *fname, void *code) {
     return tp_import(tp,fname,"__main__",code);
 }
+
+/* Function: tp_compile
+ * Compile some tinypy code.
+ *
+ */
 tp_obj tp_compile(TP, tp_obj text, tp_obj fname) {
     return tp_ez_call(tp,"BUILTINS","compile",tp_params_v(tp,2,text,fname));
 }
 
+/* Function: tp_exec
+ * Execute VM code.
+ */
 tp_obj tp_exec(TP,tp_obj code, tp_obj globals) {
     tp_obj r=tp_None;
     tp_frame(tp,globals,(tp_code*)code.string.val,&r);

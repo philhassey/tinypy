@@ -216,6 +216,24 @@ tp_inline static tp_obj tp_type(TP,int t,tp_obj v) {
 #define TP_NUM() (TP_TYPE(TP_NUMBER).number.val)
 #define TP_STR() (TP_CSTR(TP_TYPE(TP_STRING)))
 #define TP_DEFAULT(d) (tp->params.list.val->len?tp_get(tp,tp->params,tp_None):(d))
+
+/* Macro: TP_LOOP
+ * Macro to iterate over all remaining arguments.
+ *
+ * If you have a function which takes a variable number of arguments, you can
+ * iterate through all remaining arguments for example like this:
+ *
+ * > tp_obj *my_func(tp_vm *tp)
+ * > {
+ * >     // We retrieve the first argument like normal.
+ * >     tp_obj first = TP_OBJ();
+ * >     // Then we iterate over the remaining arguments.
+ * >     tp_obj arg;
+ * >     TP_LOOP(arg)
+ * >         // do something with arg
+ * >     TP_END
+ * > }
+ */
 #define TP_LOOP(e) \
     int __l = tp->params.list.val->len; \
     int __i; for (__i=0; __i<__l; __i++) { \

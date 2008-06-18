@@ -84,6 +84,13 @@ tp_obj tp_data(TP,int magic,void *v) {
     return tp_track(tp,r);
 }
 
+/* Function: tp_params
+ * Initialize the tinypy parameters.
+ *
+ * When you are calling a tinypy function, you can use this to initialize the
+ * list of parameters getting passed to it. Usually, you may want to use
+ * <tp_params_n> or <tp_params_v>.
+ */
 tp_obj tp_params(TP) {
     tp_obj r;
     tp->params = tp->_params.list.val->items[tp->cur];
@@ -91,6 +98,19 @@ tp_obj tp_params(TP) {
     r.list.val->len = 0;
     return r;
 }
+
+/* Function: tp_params_n
+ * Specify a list of objects as function call parameters.
+ *
+ * See also: <tp_params>, <tp_params_v>
+ *
+ * Parameters:
+ * n - The number of parameters.
+ * argv - A list of n tinypy objects, which will be passed as parameters.
+ *
+ * Returns:
+ * The parameters list. You may modify it before performing the function call.
+ */
 tp_obj tp_params_n(TP,int n, tp_obj argv[]) {
     tp_obj r = tp_params(tp);
     int i; for (i=0; i<n; i++) { _tp_list_append(tp,r.list.val,argv[i]); }

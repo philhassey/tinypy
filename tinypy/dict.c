@@ -1,3 +1,6 @@
+/* File: Dict
+ * Functions for dealing with dictionaries.
+ */
 int tp_lua_hash(void const *v,int l) {
     int i,step = (l>>5)+1;
     int h = l + (l >= 4?*(int*)v:0);
@@ -155,6 +158,16 @@ tp_obj tp_merge(TP) {
     return tp_None;
 }
 
+/* Function: tp_dict
+ *
+ * Creates a new dictionary object.
+ *
+ * *Note* If you use <tp_setmeta> on the dictionary, you have to use <tp_getraw> to
+ * access the "raw" dictionary again.
+ *
+ * Returns:
+ * The newly created dictionary.
+ */
 tp_obj tp_dict(TP) {
     tp_obj r = {TP_DICT};
     r.dict.val = _tp_dict_new();
