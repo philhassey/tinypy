@@ -260,7 +260,11 @@ tp_inline static tp_obj tp_number(tp_num v) {
  * Given a pointer to a C string, creates a tinypy object representing the
  * same string.
  * 
- * TODO: Can the string be deleted after passing it to this function?
+ * *Note* Only a reference to the string will be kept by tinypy, so make sure
+ * it does not go out of scope, and don't de-allocate it. Also be aware that
+ * tinypy will not delete the string for you. In many cases, it is best to
+ * use <tp_string_t> or <tp_string_slice> to create a string where tinypy
+ * manages storage for you.
  */
 tp_inline static tp_obj tp_string(char const *v) {
     tp_obj val;
@@ -274,7 +278,8 @@ tp_inline static tp_obj tp_string(char const *v) {
  * Creates a new string object from a partial C string.
  * 
  * Like <tp_string>, but you specify how many bytes of the given C string to
- * use for the string object.
+ * use for the string object. The *note* also applies for this function, as the
+ * string reference and length are kept, but no actual substring is stored.
  */
 tp_inline static tp_obj tp_string_n(char const *v,int n) {
     tp_obj val;
