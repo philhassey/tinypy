@@ -2,11 +2,6 @@
  * Various functions to help interface tinypy.
  */
 
-tp_obj *tp_ptr(tp_obj o) {
-    tp_obj *ptr = (tp_obj*)tp_malloc(sizeof(tp_obj)); *ptr = o;
-    return ptr;
-}
-
 tp_obj _tp_dcall(TP,tp_obj fnc(TP)) {
     return fnc(tp);
 }
