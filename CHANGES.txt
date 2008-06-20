@@ -5,6 +5,8 @@
 * applied OSX setup.py patch by Atul Varma
 * fixed to issue #14 by Dean
 * updated meta-method patch to be more pythonic
+* resolved Issue 19-Multiplying a string with a negative value crashes tinypy
+    by Denis
 
 == 1.1 =========================================================================
 * applied patch by Dean Hall to fix several range() bugs

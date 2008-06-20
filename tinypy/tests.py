@@ -900,6 +900,11 @@ except:
     print("OK")
 ""","OK")
 
+    #issue 19: test that multiplying a string with a negative value returns an empty string
+    t_render("""
+foo = "abc" * -1
+print(foo)
+""", "")
 
 ################################################################################
 

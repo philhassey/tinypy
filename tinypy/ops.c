@@ -286,6 +286,10 @@ tp_obj tp_mul(TP,tp_obj a, tp_obj b) {
         return tp_number(a.number.val*b.number.val);
     } else if (a.type == TP_STRING && b.type == TP_NUMBER) {
         int al = a.string.len; int n = b.number.val;
+        if(n <= 0) {
+            tp_obj r = tp_string_t(tp,0);
+            return tp_track(tp,r);
+        }
         tp_obj r = tp_string_t(tp,al*n);
         char *s = r.string.info->s;
         int i; for (i=0; i<n; i++) { memcpy(s+al*i,a.string.val,al); }
