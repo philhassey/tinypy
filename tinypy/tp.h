@@ -1,5 +1,5 @@
-/* File: Helpers
- * From tp.h.
+/* File: General
+ * Things defined in tp.h.
  */
 #ifndef TP_H
 #define TP_H
@@ -80,6 +80,28 @@ typedef struct tp_data_ {
     int magic;
 } tp_data_;
 
+/* Type: tp_obj
+ * Tinypy's object representation.
+ * 
+ * Every object in tinypy is of this type in the C API.
+ *
+ * Fields:
+ * type - This determines what kind of objects it is. It is either TP_NONE, in
+ *        which case this is the none type and no other fields can be accessed.
+ *        Or it has one of the values listed below, and the corresponding
+ *        fields can be accessed.
+ * number - TP_NUMBER
+ * number.val - A double value with the numeric value.
+ * string - TP_STRING
+ * string.val - A pointer to the string data.
+ * string.len - Length in bytes of the string data.
+ * dict - TP_DICT
+ * list - TP_LIST
+ * fnc - TP_FNC
+ * data - TP_DATA
+ * data.val - The user-provided data pointer.
+ * data.magic - The user-provided magic number for identifying the data type.
+ */
 typedef union tp_obj {
     int type;
     tp_number_ number;
@@ -149,6 +171,26 @@ typedef struct tp_frame_ {
 #define TP_FRAMES 256
 /* #define TP_REGS_PER_FRAME 256*/
 #define TP_REGS 16384
+
+/* Type: tp_vm
+ * Representation of a tinypy virtual machine instance.
+ * 
+ * A new tp_vm struct is created with <tp_init>, and will be passed to most
+ * tinypy functions as first parameter. It contains all the data associated
+ * with an instance of a tinypy virtual machine - so it is easy to have
+ * multiple instances running at the same time. When you want to free up all
+ * memory used by an instance, call <tp_deinit>.
+ * 
+ * Fields:
+ * These fields are currently documented: 
+ * 
+ * builtins - A dictionary containing all builtin objects.
+ * modules - A dictionary with all loaded modules.
+ * params - A list of parameters for the current function call.
+ * frames - A list of all call frames.
+ * cur - The index of the currently executing call frame.
+ * frames[n].globals - A dictionary of global sybmols in callframe n.
+ */
 typedef struct tp_vm {
     tp_obj builtins;
     tp_obj modules;
