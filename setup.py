@@ -236,6 +236,8 @@ def build_gcc():
     if DEBUG: nopos = ''
     if TEST:
         mods.append('tests')
+        mods.append('asm')
+        mods.append('disasm')
         do_cmd("gcc $WFLAGS -g vmmain.c $FLAGS -lm -o vm")
         if BOOT:
             do_cmd('python tests.py $SYS')

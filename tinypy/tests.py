@@ -2,6 +2,8 @@
 is_tinypy = (str(1.0) == "1")
 if not is_tinypy:
     from boot import *
+import asm
+import disasm
 
 ################################################################################
 RM = 'rm -f '
@@ -1044,3 +1046,132 @@ int main(int argc, char *argv[]) {
 """,
 "OK")
 
+################################################################################
+
+def unformat(x):
+    x = x.split(' ')
+    r = []
+    for i in x:
+        if i != ':':
+            if i:
+                r.append(i)
+    return " ".join(r)
+
+def t_asm(ass, ex, exact=True):
+    ass = ass.strip()
+    bc = asm.assemble(ass)
+    dis = disasm.disassemble(bc)
+    dis = unformat(dis)
+    assert(dis == ass)
+    fname = "tmp.tpc"
+    system_rm(fname)
+    system_rm(TMP)
+    save(fname,bc)
+    cmd = VM + fname + " > " + TMP
+    system(cmd)
+    res = load("tmp.txt").strip()
+    if exact: assert(ex == res)
+    else: assert(ex in res)
+    
+if is_boot == True and __name__ == '__main__':
+    print("# t_asm")
+    
+    t_asm("""
+NUMBER 0 0 0 42
+DEBUG 0 0 0
+""", "DEBUG: 0 42")
+
+    t_asm("""
+STRING 0 0 1 "a"
+NUMBER 1 0 0 41
+GSET 0 1 0
+STRING 2 0 1 "a"
+GGET 1 2 0
+NUMBER 2 0 0 1
+ADD 1 1 2
+GSET 0 1 0
+STRING 2 0 5 "print"
+GGET 1 2 0
+STRING 3 0 1 "a"
+GGET 2 3 0
+PARAMS 0 2 1
+CALL 0 1 0
+""", "42")
+
+    t_asm("""
+STRING 0 0 4 "str1"
+STRING 1 0 3 "foo"
+GSET 0 1 0
+STRING 0 0 4 "str2"
+STRING 1 0 3 "bar"
+GSET 0 1 0
+STRING 2 0 5 "print"
+GGET 1 2 0
+STRING 3 0 4 "str1"
+GGET 2 3 0
+STRING 4 0 4 "str2"
+GGET 3 4 0
+ADD 2 2 3
+PARAMS 0 2 1
+CALL 0 1 0
+""", "foobar")
+
+    t_asm("""
+STRING 0 0 3 "foo"
+STRING 1 0 3 "bar"
+NUMBER 2 0 0 1
+IF 2 0 0
+ADD 0 0 1
+STRING 1 0 5 "print"
+GGET 3 1 0
+PARAMS 2 0 1
+CALL 0 3 2
+EOF 0 0 0
+""", "foo");
+
+    t_asm("""
+NUMBER 0 0 0 1
+NUMBER 1 0 0 2
+JUMP 0 0 2
+ADD 0 0 1
+DEBUG 0 0 0
+""", "DEBUG: 0 1");
+
+    t_asm("""
+STRING 0 0 3 "foo"
+NUMBER 1 0 0 3
+MUL 0 0 1
+DEBUG 0 0 0
+""", "DEBUG: 0 foofoofoo");
+
+    t_asm("""
+NUMBER 0 0 0 1
+NUMBER 0 0 0 42
+LIST 0 0 2
+GET 0 0 1
+DEBUG 0 0 0
+""", "DEBUG: 0 42");
+
+    t_asm("""
+NUMBER 0 0 0 1
+NUMBER 1 0 0 1
+NUMBER 2 0 0 1
+LIST 0 0 3
+LEN 0 0 0
+DEBUG 0 0 0
+""", "DEBUG: 0 3");
+
+    t_asm("""
+DEF 0 0 13
+STRING 1 0 3 "foo"
+NAME 1 0 0
+STRING 3 0 5 "print"
+GGET 2 3 0
+STRING 3 0 3 "foo"
+PARAMS 1 3 1
+CALL 1 2 1
+EOF 0 0 0
+PARAMS 1 0 0
+CALL 1 0 1
+EOF 0 0 0
+""", "foo");
