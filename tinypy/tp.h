@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <time.h>
 
 #ifdef __GNUC__
 #define tp_inline __inline__
@@ -211,6 +212,9 @@ typedef struct tp_vm {
     _tp_list *black;
     _tp_dict *strings;
     int steps;
+    clock_t clocks;
+    double time_elapsed;
+    double time_limit;
 } tp_vm;
 
 #define TP tp_vm *tp
@@ -229,10 +233,12 @@ void tp_set(TP,tp_obj,tp_obj,tp_obj);
 tp_obj tp_get(TP,tp_obj,tp_obj);
 tp_obj tp_has(TP,tp_obj self, tp_obj k);
 tp_obj tp_len(TP,tp_obj);
+void tp_del(TP,tp_obj,tp_obj);
 tp_obj tp_str(TP,tp_obj);
 int tp_cmp(TP,tp_obj,tp_obj);
 void _tp_raise(TP,tp_obj);
 tp_obj tp_printf(TP,char const *fmt,...);
+void tp_sandbox(TP, double, double);
 tp_obj tp_track(TP,tp_obj);
 void tp_grey(TP,tp_obj);
 tp_obj tp_call(TP, tp_obj fnc, tp_obj params);
@@ -254,6 +260,8 @@ tp_inline static tp_obj tp_type(TP,int t,tp_obj v) {
     if (v.type != t) { tp_raise(tp_None,"_tp_type(%d,%s)",t,TP_CSTR(v)); }
     return v;
 }
+
+#define TP_NO_LIMIT -1
 #define TP_TYPE(t) tp_type(tp,t,TP_OBJ())
 #define TP_NUM() (TP_TYPE(TP_NUMBER).number.val)
 #define TP_STR() (TP_CSTR(TP_TYPE(TP_STRING)))

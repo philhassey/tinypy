@@ -2,6 +2,7 @@
  * Functionality pertaining to the virtual machine.
  */
 void tp_run(TP,int cur);
+void tp_time_update(TP);    
 
 tp_vm *_tp_init(void) {
     int i;
@@ -26,6 +27,9 @@ tp_vm *_tp_init(void) {
     tp_set(tp,tp->modules,tp_string("BUILTINS"),tp->builtins);
     tp_set(tp,tp->builtins,tp_string("BUILTINS"),tp->builtins);
     tp->regs = tp->_regs.list.val->items;
+    tp->time_limit = TP_NO_LIMIT;
+    tp->clocks = clock();
+    tp->time_elapsed = 0.0;
     tp_full(tp);
     return tp;
 }
@@ -288,6 +292,7 @@ int tp_step(TP) {
         case TP_IREGS: f->cregs = VA; break;
         default: tp_raise(0,"tp_step: invalid instruction %d",e.i); break;
     }
+    tp_time_update(tp);
     cur += 1;
     }
     SR(0);
@@ -320,7 +325,7 @@ tp_obj tp_ez_call(TP, const char *mod, const char *fnc, tp_obj params) {
  * Parameters:
  * fname - The filename of a file containing the module's code.
  * name - The name of the module.
- * codes - The module's code. If this is given, fname is ignored.
+ * codes - The module's code.  If this is given, fname is ignored.
  *
  * Returns:
  * The module object.
@@ -390,7 +395,7 @@ void tp_builtins(TP) {
     {"int",tp_int}, {"exec",tp_exec_}, {"exists",tp_exists},
     {"mtime",tp_mtime}, {"number",tp_float}, {"round",tp_round},
     {"ord",tp_ord}, {"merge",tp_merge}, {"getraw",tp_getraw},
-    {"setmeta",tp_setmeta}, {"getmeta",tp_getmeta},
+    {"setmeta",tp_setmeta}, {"getmeta",tp_getmeta}, {"sandbox",tp_sandbox_},
     {0,0},
     };
     int i; for(i=0; b[i].s; i++) {
@@ -411,7 +416,6 @@ void tp_args(TP,int argc, char *argv[]) {
     tp_set(tp,tp->builtins,tp_string("ARGV"),self);
 }
 
-
 tp_obj tp_main(TP,char *fname, void *code) {
     return tp_import(tp,fname,"__main__",code);
 }
@@ -427,7 +431,7 @@ tp_obj tp_compile(TP, tp_obj text, tp_obj fname) {
 /* Function: tp_exec
  * Execute VM code.
  */
-tp_obj tp_exec(TP,tp_obj code, tp_obj globals) {
+tp_obj tp_exec(TP, tp_obj code, tp_obj globals) {
     tp_obj r=tp_None;
     tp_frame(tp,globals,(tp_code*)code.string.val,&r);
     tp_run(tp,tp->cur);
@@ -456,5 +460,19 @@ tp_vm *tp_init(int argc, char *argv[]) {
     return tp;
 }
 
+void tp_sandbox(TP, double time_limit, double mem_limit) {
+    tp->time_limit = time_limit;
+}
+
+void tp_time_update(TP) {
+    clock_t tmp = tp->clocks;
+    if(tp->time_limit != TP_NO_LIMIT)
+    {
+        tp->clocks = clock();
+        tp->time_elapsed += ((double) (tp->clocks - tmp) / CLOCKS_PER_SEC) * 1000.0;
+        if(tp->time_elapsed >= tp->time_limit)
+            tp_raise(,"time_limit_exceeded: %.4lf (limit: %.4lf)", tp->time_elapsed, tp->time_limit);
+    }
+}    
 
 /**/

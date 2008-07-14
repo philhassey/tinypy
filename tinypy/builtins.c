@@ -55,7 +55,6 @@ tp_obj tp_len_(TP) {
     return tp_len(tp,e);
 }
 
-
 tp_obj tp_assert(TP) {
     int a = TP_NUM();
     if (a) { return tp_None; }
@@ -302,3 +301,9 @@ tp_obj tp_class(TP) {
     return klass;
 }
 
+tp_obj tp_sandbox_(TP) {
+    tp_num e = TP_NUM();
+    tp_sandbox(tp, e, TP_NO_LIMIT);
+    tp_del(tp, tp->builtins, tp_string("sandbox"));
+    return tp_None;
+}

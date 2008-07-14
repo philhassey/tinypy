@@ -488,12 +488,12 @@ print(x.a+y.a)
 x = {}
 y = x['x']
 """
-,'KeyError',0)
+,'KeyError', False)
     t_render("""
 x = []
 y = x[1]
 """
-,'KeyError',0)
+,'KeyError', False)
     t_render("""print("O"+"K")""","OK")
     t_render("""print("-".join(["O","K"]))""","O-K")
     t_render("""print("OK-OK".split("-")[1])""","OK")
@@ -636,7 +636,7 @@ test()
     t_render("""x=(1,3);print({x:'OK'}[x])""","OK")
     t_render("""x=(1,3);y=(1,3);print({x:'OK'}[y])""","OK")
     t_render("""print({(1,3):'OK'}[(1,3)])""","OK")
-    t_render("def test(): test()\ntest()","Exception",0)
+    t_render("def test(): test()\ntest()","Exception", False)
     t_render("x = []; x.append(x); print(x<x)","0");
     t_render("x = []; x.append(x); print({x:'OK'}[x])","OK")
     #t_render("print(float(str(4294967296))==float('4294967296'))","1")
@@ -907,6 +907,22 @@ except:
 foo = "abc" * -1
 print(foo)
 """, "")
+
+#test that sandbox() raises an exception when the time limit is passed
+    t_render("""
+sandbox(1)
+while True: 
+    pass
+""", "Exception", False)
+
+#test that calling sandbox() removes the sandbox builtin
+    t_render("""
+sandbox(500)
+try:
+    sandbox(200)
+except:
+    print("OK")
+""", "OK")
 
 ################################################################################
 
