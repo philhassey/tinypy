@@ -181,7 +181,7 @@ enum {
     TP_INUMBER,TP_ISTRING,TP_IGGET,TP_IGSET,TP_IMOVE,TP_IDEF,TP_IPASS,TP_IJUMP,TP_ICALL,
     TP_IRETURN,TP_IIF,TP_IDEBUG,TP_IEQ,TP_ILE,TP_ILT,TP_IDICT,TP_ILIST,TP_INONE,TP_ILEN,
     TP_ILINE,TP_IPARAMS,TP_IIGET,TP_IFILE,TP_INAME,TP_INE,TP_IHAS,TP_IRAISE,TP_ISETJMP,
-    TP_IMOD,TP_ILSH,TP_IRSH,TP_IITER,TP_IDEL,TP_IREGS,
+    TP_IMOD,TP_ILSH,TP_IRSH,TP_IITER,TP_IDEL,TP_IREGS,TP_IXOR,
     TP_ITOTAL
 };
 
@@ -190,6 +190,7 @@ enum {
        "STR","GGET","GSET","MOVE","DEF","PASS","JUMP","CALL","RETURN","IF","DEBUG",
        "EQ","LE","LT","DICT","LIST","NONE","LEN","LINE","PARAMS","IGET","FILE",
        "NAME","NE","HAS","RAISE","SETJMP","MOD","LSH","RSH","ITER","DEL","REGS",
+       "XOR"
    };*/
 
 #define VA ((int)e.regs.a)
@@ -222,6 +223,7 @@ int tp_step(TP) {
         case TP_IPOW: RA = tp_pow(tp,RB,RC); break;
         case TP_IAND: RA = tp_and(tp,RB,RC); break;
         case TP_IOR:  RA = tp_or(tp,RB,RC); break;
+        case TP_IXOR:  RA = tp_xor(tp,RB,RC); break;
         case TP_IMOD:  RA = tp_mod(tp,RB,RC); break;
         case TP_ILSH:  RA = tp_lsh(tp,RB,RC); break;
         case TP_IRSH:  RA = tp_rsh(tp,RB,RC); break;

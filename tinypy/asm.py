@@ -5,7 +5,7 @@ def get_ops():
           "JUMP","CALL","RETURN","IF","DEBUG","EQ","LE","LT","DICT",  \
           "LIST","NONE","LEN","LINE","PARAMS","IGET","FILE","NAME",   \
           "NE","HAS","RAISE","SETJMP","MOD","LSH","RSH","ITER","DEL", \
-          "REGS"]
+          "REGS","XOR"]
     dic = {}
     for i in li:
         dic[i] = li.index(i)

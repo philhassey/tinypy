@@ -350,6 +350,7 @@ int tp_cmp(TP,tp_obj a, tp_obj b) {
 
 TP_OP(tp_and,((long)a)&((long)b));
 TP_OP(tp_or,((long)a)|((long)b));
+TP_OP(tp_xor,((long)a)^((long)b));
 TP_OP(tp_mod,((long)a)%((long)b));
 TP_OP(tp_lsh,((long)a)<<((long)b));
 TP_OP(tp_rsh,((long)a)>>((long)b));

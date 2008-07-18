@@ -3,7 +3,7 @@ from tokenize import Token
 if '.' in str(1.0):
     from boot import *
 
-EOF,ADD,SUB,MUL,DIV,POW,AND,OR,CMP,GET,SET,NUMBER,STRING,GGET,GSET,MOVE,DEF,PASS,JUMP,CALL,RETURN,IF,DEBUG,EQ,LE,LT,DICT,LIST,NONE,LEN,POS,PARAMS,IGET,FILE,NAME,NE,HAS,RAISE,SETJMP,MOD,LSH,RSH,ITER,DEL,REGS = 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44
+EOF,ADD,SUB,MUL,DIV,POW,AND,OR,CMP,GET,SET,NUMBER,STRING,GGET,GSET,MOVE,DEF,PASS,JUMP,CALL,RETURN,IF,DEBUG,EQ,LE,LT,DICT,LIST,NONE,LEN,POS,PARAMS,IGET,FILE,NAME,NE,HAS,RAISE,SETJMP,MOD,LSH,RSH,ITER,DEL,REGS,XOR = 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45
 
 class DState:
     def __init__(self,code,fname):
@@ -215,13 +215,13 @@ def _do_none(r=None):
 
 def do_symbol(t,r=None):
     sets = ['=']
-    isets = ['+=','-=','*=','/=']
+    isets = ['+=','-=','*=','/=', '|=', '&=', '^=']
     cmps = ['<','>','<=','>=','==','!=']
     metas = {
         '+':ADD,'*':MUL,'/':DIV,'**':POW,
         '-':SUB,'and':AND,'or':OR,
         '%':MOD,'>>':RSH,'<<':LSH,
-        '&':AND,'|':OR,
+        '&':AND,'|':OR,'^':XOR
     }
     if t.val == 'None': return _do_none(r)
     if t.val == 'True':

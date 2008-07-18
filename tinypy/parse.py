@@ -370,8 +370,9 @@ def i_infix(bp,led,*vs):
     for v in vs: base_dmap[v] = {'lbp':bp,'bp':bp,'led':led}
 i_infix(40,infix_led,'<','>','<=','>=','!=','==')
 i_infix(40,infix_is,'is','in')
-i_infix(10,infix_led,'+=','-=','*=','/=')
-i_infix(31,infix_led,'and','&')
+i_infix(10,infix_led,'+=','-=','*=','/=', '&=', '|=', '^=')
+i_infix(32,infix_led,'and','&')
+i_infix(31,infix_led,'^')
 i_infix(30,infix_led,'or','|')
 i_infix(36,infix_led,'<<','>>')
 def i_terms(*vs):

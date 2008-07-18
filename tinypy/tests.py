@@ -251,6 +251,14 @@ if __name__ == '__main__':
     t_render('print(234)',"234")
     t_render('a=3\nprint(a)',"3")
     t_render('print(2+3)',"5")
+    t_render('print(4|1)',"5")
+    t_render('print(5&7)',"5")
+    t_render('print(2^7)',"5")
+    t_render('print(7^2&2)',"5")
+    t_render('print(7^2|4)',"5")
+    t_render('x=4\nx|=1\nprint(x)',"5")
+    t_render('x=5\nx&=7\nprint(x)',"5")
+    t_render('x=2\nx^=7\nprint(x)',"5")
     t_render("""
 x = 2
 x += 3
