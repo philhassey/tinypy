@@ -1,16 +1,20 @@
 /* File: VM
  * Functionality pertaining to the virtual machine.
  */
-void tp_run(TP,int cur);
-void tp_time_update(TP);    
 
 tp_vm *_tp_init(void) {
     int i;
-    tp_vm *tp = (tp_vm*)tp_malloc(sizeof(tp_vm));
+    tp_vm *tp = (tp_vm*)malloc(sizeof(tp_vm));
+    tp->time_limit = TP_NO_LIMIT;
+    tp->clocks = clock();
+    tp->time_elapsed = 0.0;
+    tp->mem_limit = TP_NO_LIMIT;
+    tp->mem_exceeded = 0;
+    tp->mem_used = sizeof(tp_vm);
     tp->cur = 0;
     tp->jmp = 0;
     tp->ex = tp_None;
-    tp->root = tp_list(0);
+    tp->root = tp_list_nt(tp);
     for (i=0; i<256; i++) { tp->chars[i][0]=i; }
     tp_gc_init(tp);
     tp->_regs = tp_list(tp);
@@ -27,9 +31,6 @@ tp_vm *_tp_init(void) {
     tp_set(tp,tp->modules,tp_string("BUILTINS"),tp->builtins);
     tp_set(tp,tp->builtins,tp_string("BUILTINS"),tp->builtins);
     tp->regs = tp->_regs.list.val->items;
-    tp->time_limit = TP_NO_LIMIT;
-    tp->clocks = clock();
-    tp->time_elapsed = 0.0;
     tp_full(tp);
     return tp;
 }
@@ -49,7 +50,8 @@ void tp_deinit(TP) {
     tp_full(tp); tp_full(tp);
     tp_delete(tp,tp->root);
     tp_gc_deinit(tp);
-    tp_free(tp);
+    tp->mem_used -= sizeof(tp_vm); 
+    free(tp);
 }
 
 
@@ -96,8 +98,6 @@ void tp_print_stack(TP) {
     }
     printf("\nException:\n%s\n",TP_CSTR(tp->ex));
 }
-
-
 
 void tp_handle(TP) {
     int i;
@@ -293,6 +293,7 @@ int tp_step(TP) {
         default: tp_raise(0,"tp_step: invalid instruction %d",e.i); break;
     }
     tp_time_update(tp);
+    tp_mem_update(tp);
     cur += 1;
     }
     SR(0);
@@ -459,20 +460,5 @@ tp_vm *tp_init(int argc, char *argv[]) {
     tp_compiler(tp);
     return tp;
 }
-
-void tp_sandbox(TP, double time_limit, double mem_limit) {
-    tp->time_limit = time_limit;
-}
-
-void tp_time_update(TP) {
-    clock_t tmp = tp->clocks;
-    if(tp->time_limit != TP_NO_LIMIT)
-    {
-        tp->clocks = clock();
-        tp->time_elapsed += ((double) (tp->clocks - tmp) / CLOCKS_PER_SEC) * 1000.0;
-        if(tp->time_elapsed >= tp->time_limit)
-            tp_raise(,"time_limit_exceeded: %.4lf (limit: %.4lf)", tp->time_elapsed, tp->time_limit);
-    }
-}    
 
 /**/

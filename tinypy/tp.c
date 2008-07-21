@@ -10,6 +10,7 @@
 #include "builtins.c"
 #include "gc.c"
 #include "ops.c"
+#include "sandbox.c"
 void tp_compiler(TP);
 #include "vm.c"
 

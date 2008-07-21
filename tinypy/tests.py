@@ -908,21 +908,28 @@ foo = "abc" * -1
 print(foo)
 """, "")
 
-#test that sandbox() raises an exception when the time limit is passed
+    #test that sandbox() raises an exception when the time limit is passed
     t_render("""
-sandbox(1)
+sandbox(1, False)
 while True: 
     pass
-""", "Exception", False)
+""", "time_limit_exceeded", False)
 
-#test that calling sandbox() removes the sandbox builtin
+    #test that calling sandbox() removes the sandbox builtin
     t_render("""
-sandbox(500)
+sandbox(500, False)
 try:
     sandbox(200)
 except:
     print("OK")
 """, "OK")
+
+    #test that sandbox() raises an exception when the memory limit is passed
+    t_render("""
+sandbox(False, 1)
+a = 42
+""", "memory_limit_exceeded", False)
+
 
 ################################################################################
 

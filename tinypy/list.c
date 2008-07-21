@@ -1,6 +1,6 @@
-void _tp_list_realloc(_tp_list *self,int len) {
+void _tp_list_realloc(TP, _tp_list *self,int len) {
     if (!len) { len=1; }
-    self->items = (tp_obj*)tp_realloc(self->items,len*sizeof(tp_obj));
+    self->items = (tp_obj*)tp_realloc(tp, self->items,len*sizeof(tp_obj));
     self->alloc = len;
 }
 
@@ -9,9 +9,9 @@ void _tp_list_set(TP,_tp_list *self,int k, tp_obj v, const char *error) {
     self->items[k] = v;
     tp_grey(tp,v);
 }
-void _tp_list_free(_tp_list *self) {
-    tp_free(self->items);
-    tp_free(self);
+void _tp_list_free(TP, _tp_list *self) {
+    tp_free(tp, self->items);
+    tp_free(tp, self);
 }
 
 tp_obj _tp_list_get(TP,_tp_list *self,int k,const char *error) {
@@ -20,7 +20,7 @@ tp_obj _tp_list_get(TP,_tp_list *self,int k,const char *error) {
 }
 void _tp_list_insertx(TP,_tp_list *self, int n, tp_obj v) {
     if (self->len >= self->alloc) {
-        _tp_list_realloc(self,self->alloc*2);
+        _tp_list_realloc(tp, self,self->alloc*2);
     }
     if (n < self->len) { memmove(&self->items[n+1],&self->items[n],sizeof(tp_obj)*(self->len-n)); }
     self->items[n] = v;
@@ -61,16 +61,16 @@ tp_obj tp_index(TP) {
     return tp_number(i);
 }
 
-_tp_list *_tp_list_new(void) {
-    return (_tp_list*)tp_malloc(sizeof(_tp_list));
+_tp_list *_tp_list_new(TP) {
+    return (_tp_list*)tp_malloc(tp, sizeof(_tp_list));
 }
 
 tp_obj _tp_list_copy(TP, tp_obj rr) {
     tp_obj val = {TP_LIST};
     _tp_list *o = rr.list.val;
-    _tp_list *r = _tp_list_new();
+    _tp_list *r = _tp_list_new(tp);
     *r = *o; r->gci = 0;
-    r->items = (tp_obj*)tp_malloc(sizeof(tp_obj)*o->len);
+    r->items = (tp_obj*)tp_malloc(tp, sizeof(tp_obj)*o->len);
     memcpy(r->items,o->items,sizeof(tp_obj)*o->len);
     val.list.val = r;
     return tp_track(tp,val);
@@ -106,15 +106,21 @@ tp_obj tp_extend(TP) {
     return tp_None;
 }
 
+tp_obj tp_list_nt(TP) {
+    tp_obj r = {TP_LIST};
+    r.list.val = _tp_list_new(tp);
+    return r;
+}
+
 tp_obj tp_list(TP) {
     tp_obj r = {TP_LIST};
-    r.list.val = _tp_list_new();
-    return tp ? tp_track(tp,r) : r;
+    r.list.val = _tp_list_new(tp);
+    return tp_track(tp,r);
 }
 
 tp_obj tp_list_n(TP,int n,tp_obj *argv) {
     int i;
-    tp_obj r = tp_list(tp); _tp_list_realloc(r.list.val,n);
+    tp_obj r = tp_list(tp); _tp_list_realloc(tp, r.list.val,n);
     for (i=0; i<n; i++) {
         _tp_list_append(tp,r.list.val,argv[i]);
     }

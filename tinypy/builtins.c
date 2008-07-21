@@ -302,8 +302,9 @@ tp_obj tp_class(TP) {
 }
 
 tp_obj tp_sandbox_(TP) {
-    tp_num e = TP_NUM();
-    tp_sandbox(tp, e, TP_NO_LIMIT);
+    tp_num time = TP_NUM();
+    tp_num mem = TP_NUM();
+    tp_sandbox(tp, time, mem);
     tp_del(tp, tp->builtins, tp_string("sandbox"));
     return tp_None;
 }

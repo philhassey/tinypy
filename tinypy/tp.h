@@ -33,9 +33,9 @@
 #error "Unsuported compiler"
 #endif
 
-#define tp_malloc(x) calloc((x),1)
-#define tp_realloc(x,y) realloc(x,y)
-#define tp_free(x) free(x)
+//#define tp_malloc(x) calloc((x),1)
+//#define tp_realloc(x,y) realloc(x,y)
+//#define tp_free(x) free(x)
 
 /* #include <gc/gc.h>
    #define tp_malloc(x) GC_MALLOC(x)
@@ -206,15 +206,19 @@ typedef struct tp_vm {
     tp_obj ex;
     char chars[256][2];
     int cur;
-    /* gc*/
+    /* gc */
     _tp_list *white;
     _tp_list *grey;
     _tp_list *black;
     _tp_dict *strings;
     int steps;
+    /* sandbox */
     clock_t clocks;
     double time_elapsed;
     double time_limit;
+    size_t mem_limit;
+    size_t mem_used;
+    int mem_exceeded;
 } tp_vm;
 
 #define TP tp_vm *tp
@@ -229,6 +233,14 @@ typedef struct _tp_data {
 
 extern tp_obj tp_None;
 
+void *tp_malloc(TP, size_t);
+void *tp_realloc(TP, void *, size_t);
+void tp_free(TP, void *);
+void tp_sandbox(TP, double, size_t);
+void tp_time_update(TP);
+void tp_mem_update(TP);
+
+void tp_run(TP,int cur);
 void tp_set(TP,tp_obj,tp_obj,tp_obj);
 tp_obj tp_get(TP,tp_obj,tp_obj);
 tp_obj tp_has(TP,tp_obj self, tp_obj k);
@@ -238,7 +250,6 @@ tp_obj tp_str(TP,tp_obj);
 int tp_cmp(TP,tp_obj,tp_obj);
 void _tp_raise(TP,tp_obj);
 tp_obj tp_printf(TP,char const *fmt,...);
-void tp_sandbox(TP, double, double);
 tp_obj tp_track(TP,tp_obj);
 void tp_grey(TP,tp_obj);
 tp_obj tp_call(TP, tp_obj fnc, tp_obj params);
@@ -261,7 +272,7 @@ tp_inline static tp_obj tp_type(TP,int t,tp_obj v) {
     return v;
 }
 
-#define TP_NO_LIMIT -1
+#define TP_NO_LIMIT 0
 #define TP_TYPE(t) tp_type(tp,t,TP_OBJ())
 #define TP_NUM() (TP_TYPE(TP_NUMBER).number.val)
 #define TP_STR() (TP_CSTR(TP_TYPE(TP_STRING)))
