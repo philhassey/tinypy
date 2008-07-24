@@ -26,7 +26,7 @@ void tp_time_update(TP) {
 }
 
 void *tp_malloc(TP, size_t bytes) {
-    size_t *ptr = calloc(bytes + sizeof(size_t), 1);
+    size_t *ptr = (size_t *) calloc(bytes + sizeof(size_t), 1);
     if(ptr) {
         *ptr = bytes;
         tp->mem_used += bytes + sizeof(size_t);
@@ -36,7 +36,7 @@ void *tp_malloc(TP, size_t bytes) {
 }
 
 void tp_free(TP, void *ptr) {
-    size_t *temp = ptr;
+    size_t *temp = (size_t *) ptr;
     if(temp) {
         --temp;
         tp->mem_used -= (*temp + sizeof(size_t));
@@ -46,14 +46,14 @@ void tp_free(TP, void *ptr) {
 }
 
 void *tp_realloc(TP, void *ptr, size_t bytes) {
-    size_t *temp = ptr;
+    size_t *temp = (size_t *) ptr;
     int diff;
     if(temp && bytes) {
         --temp;
         diff = bytes - *temp;
         *temp = bytes;
         tp->mem_used += diff;
-        temp = realloc(temp, bytes+sizeof(size_t));
+        temp = (size_t *) realloc(temp, bytes+sizeof(size_t));
         return temp+1;
     }
     else if(temp && !bytes) {
