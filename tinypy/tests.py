@@ -916,6 +916,17 @@ foo = "abc" * -1
 print(foo)
 """, "")
 
+    #issue 18:  tests that strings containing NUL chars are printed correctly
+    t_render("""
+foo = "abc" + chr(0) + "d"
+print(foo)
+""", "abc" + chr(0) + "d")
+
+    #issue 18 (related): tests that "".strip() treats strings containing NUL chars correctly
+    t_render("""
+foo = "abc" + chr(0) + "d\n"
+print(foo.strip())
+""", "abc" + chr(0) + "d")
 ################################################################################
 
 def t_boot(ss,ex,exact=True):

@@ -4,10 +4,16 @@
 
 tp_obj tp_print(TP) {
     int n = 0;
-    tp_obj e;
+    tp_obj e, len;
     TP_LOOP(e)
         if (n) { printf(" "); }
-        printf("%s",TP_CSTR(e));
+        if (e.type == TP_STRING) {
+            len = tp_len(tp, e);
+            fwrite(TP_CSTR(e), sizeof (char), len.number.val, stdout);
+        }
+        else {
+            printf("%s", TP_CSTR(e));
+        }
         n += 1;
     TP_END;
     printf("\n");

@@ -138,22 +138,22 @@ tp_obj tp_ord(TP) {
 }
 
 tp_obj tp_strip(TP) {
-    char const *v = TP_STR();
-    int i, l = strlen(v); int a = l, b = 0;
-    tp_obj r;
+    tp_obj e = TP_TYPE(TP_STRING);
+    char const *v = e.string.val;
     char *s;
-    for (i=0; i<l; i++) {
+    int len = e.string.len;
+    int i, a = len, b = 0;
+    for (i=0; i<len; i++) {
         if (v[i] != ' ' && v[i] != '\n' && v[i] != '\t' && v[i] != '\r') {
             a = _tp_min(a,i); b = _tp_max(b,i+1);
         }
     }
     if ((b-a) < 0) { return tp_string(""); }
-    r = tp_string_t(tp,b-a);
-    s = r.string.info->s;
+    e = tp_string_t(tp,b-a);
+    s = e.string.info->s;
     memcpy(s,v+a,b-a);
-    return tp_track(tp,r);
+    return tp_track(tp,e);
 }
-
 
 tp_obj tp_replace(TP) {
     tp_obj s = TP_OBJ();
