@@ -73,7 +73,7 @@ void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
 void _tp_raise(TP,tp_obj e) {
     if (!tp || !tp->jmp) {
         printf("\nException:\n%s\n",TP_CSTR(e));
-        exit(-1);
+        abort();
         return;
     }
     if (e.type != TP_NONE) { tp->ex = e; }
