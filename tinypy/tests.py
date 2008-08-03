@@ -1,5 +1,5 @@
-# figure out if we're in python or tinypy (tinypy displays "1.0" as "1")
-is_tinypy = (str(1.0) == "1")
+import sys
+is_tinypy = "tinypy" in sys.version
 if not is_tinypy:
     from boot import *
 import asm

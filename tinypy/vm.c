@@ -25,6 +25,9 @@ tp_vm *_tp_init(void) {
     tp_set(tp,tp->builtins,tp_string("MODULES"),tp->modules);
     tp_set(tp,tp->modules,tp_string("BUILTINS"),tp->builtins);
     tp_set(tp,tp->builtins,tp_string("BUILTINS"),tp->builtins);
+    tp_obj sys = tp_dict(tp);
+    tp_set(tp, sys, tp_string("version"), tp_string("tinypy 1.2+SVN"));
+    tp_set(tp,tp->modules, tp_string("sys"), sys);
     tp->regs = tp->_regs.list.val->items;
     tp_full(tp);
     return tp;
