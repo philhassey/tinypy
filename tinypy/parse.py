@@ -1,6 +1,6 @@
-import tokenize
+import tokenize, sys
 from tokenize import Token
-if '.' in str(1.0):
+if not "tinypy" in sys.version:
     from boot import *
 
 def check(t,*vs):

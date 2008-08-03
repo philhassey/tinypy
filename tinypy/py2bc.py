@@ -1,4 +1,5 @@
-if not (str(1.0) == "1"):
+import sys
+if not "tinypy" in sys.version:
     from boot import *
 
 import tokenize,parse,encode
