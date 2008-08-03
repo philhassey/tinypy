@@ -930,6 +930,20 @@ sandbox(False, 1)
 a = 42
 """, "memory_limit_exceeded", False)
 
+    #test that circular inheritance doesn't cause an infinite lookup chain
+    t_render("""
+class A:
+    pass
+
+class B:
+    pass
+
+setmeta(A, B)
+setmeta(B, A)
+
+foo = A()
+print("OK")
+""", "OK")
 
 ################################################################################
 
@@ -1198,3 +1212,31 @@ PARAMS 1 0 0
 CALL 1 0 1
 EOF 0 0 0
 """, "foo");
+
+    #test that function definitions longer than the bytecode are properly sanitised
+    t_asm("""
+DEF 0 0 100
+REGS 2 0 0
+STRING 1 0 3 "foo"
+NAME 1 0 0
+PASS 0 0 0
+EOF 0 0 0
+""", "out of bounds", False)
+
+    #test that negative out of bounds jumps are sanitised
+    t_asm("""
+JUMP 0 127 255
+EOF 0 0 0
+""", "out of bounds", False)
+    
+    #test that positive out of bounds jumps are sanitised
+    t_asm("""
+JUMP 0 128 0
+EOF 0 0 0
+""", "out of bounds", False)
+
+    #test that strings with boundaries beyond the end of the bytecode are properly sanitised
+    t_asm("""
+STRING 1 0 100 "foobar"
+EOF 0 0 0
+""", "out of bounds", False)
