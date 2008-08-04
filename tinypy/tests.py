@@ -927,6 +927,40 @@ print(foo)
 foo = "abc" + chr(0) + "d\n"
 print(foo.strip())
 """, "abc" + chr(0) + "d")
+
+    #test that class variables work as expected
+    t_render("""
+class A:
+    foo = 42
+s = str(A.foo)
+A.foo += 1
+s += str(A.foo)
+print(s)
+""", "4243")
+
+    #check that class variables are not leaked to the global scope
+    t_render("""
+class A:
+    foo = 42
+print(foo)
+""", "KeyError", False)
+
+    #test that class variables can correctly be accessed by a subclass
+    t_render("""
+class A:
+    foo = "OK"
+class B(A):
+    pass
+print(B.foo)
+""", "OK")
+
+    #test that class variables can be accessed from instances
+    t_render("""
+class A:
+    foo = "OK"
+o = A()
+print(o.foo)
+""", "OK")
 ################################################################################
 
 def t_boot(ss,ex,exact=True):

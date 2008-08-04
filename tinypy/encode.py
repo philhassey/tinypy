@@ -486,15 +486,20 @@ def do_class(t):
         Token(tok.pos,'reg',kls),
         parent])))
         
-    for fc in items[1].items:
-        if fc.type != 'def': continue
-        do_def(fc,kls)
+    for member in items[1].items:
+        if member.type == 'def': do_def(member,kls)
+        elif member.type == 'symbol' and member.val == '=': do_classvar(member,kls)
+        else: continue
         
     free_reg(kls) #REG
 
-
-
-
+def do_classvar(t,r):
+    var = do_string(t.items[0])
+    val = do(t.items[1])
+    code(SET,r,var,val)
+    free_reg(var)
+    free_reg(val)
+    
 def do_while(t):
     items = t.items
     t = stack_tag()
