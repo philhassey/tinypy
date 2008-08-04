@@ -1180,7 +1180,7 @@ GGET 3 1 0
 PARAMS 2 0 1
 CALL 0 3 2
 EOF 0 0 0
-""", "foo");
+""", "foo")
 
     t_asm("""
 NUMBER 0 0 0 1
@@ -1188,14 +1188,14 @@ NUMBER 1 0 0 2
 JUMP 0 0 2
 ADD 0 0 1
 DEBUG 0 0 0
-""", "DEBUG: 0 1");
+""", "DEBUG: 0 1")
 
     t_asm("""
 STRING 0 0 3 "foo"
 NUMBER 1 0 0 3
 MUL 0 0 1
 DEBUG 0 0 0
-""", "DEBUG: 0 foofoofoo");
+""", "DEBUG: 0 foofoofoo")
 
     t_asm("""
 NUMBER 0 0 0 1
@@ -1203,7 +1203,7 @@ NUMBER 0 0 0 42
 LIST 0 0 2
 GET 0 0 1
 DEBUG 0 0 0
-""", "DEBUG: 0 42");
+""", "DEBUG: 0 42")
 
     t_asm("""
 NUMBER 0 0 0 1
@@ -1212,7 +1212,7 @@ NUMBER 2 0 0 1
 LIST 0 0 3
 LEN 0 0 0
 DEBUG 0 0 0
-""", "DEBUG: 0 3");
+""", "DEBUG: 0 3")
 
     t_asm("""
 DEF 0 0 13
@@ -1227,4 +1227,4 @@ EOF 0 0 0
 PARAMS 1 0 0
 CALL 1 0 1
 EOF 0 0 0
-""", "foo");
+""", "foo")
