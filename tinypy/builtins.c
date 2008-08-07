@@ -306,5 +306,9 @@ tp_obj tp_sandbox_(TP) {
     tp_num mem = TP_NUM();
     tp_sandbox(tp, time, mem);
     tp_del(tp, tp->builtins, tp_string("sandbox"));
+    tp_del(tp, tp->builtins, tp_string("mtime"));
+    tp_del(tp, tp->builtins, tp_string("load"));
+    tp_del(tp, tp->builtins, tp_string("save"));
+    tp_del(tp, tp->builtins, tp_string("system"));    
     return tp_None;
 }
