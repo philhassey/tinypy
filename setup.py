@@ -167,7 +167,7 @@ def build_blob():
     out.append("#define TINYPY_H")
     out.extend([v.rstrip() for v in open_tinypy('tp.h','r')])
     for fname in ['list.c','dict.c','misc.c','string.c','builtins.c',
-        'gc.c','ops.c','vm.c','tp.c']:
+        'gc.c','ops.c','vm.c','tp.c', 'sandbox.c']:
         for line in open_tinypy(fname,'r'):
             line = line.rstrip()
             if not len(line): continue
@@ -207,7 +207,7 @@ def build_blob():
         out.append("""extern unsigned char tp_%s[];"""%mod)
 
     for fname in ['list.c','dict.c','misc.c','string.c','builtins.c',
-        'gc.c','ops.c','vm.c','tp.c','bc.c']:
+        'gc.c','ops.c','vm.c','tp.c','bc.c', 'sandbox.c']:
         for line in open_tinypy(fname,'r'):
             line = line.rstrip()
             if line.find('#include "') != -1: continue
