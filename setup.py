@@ -215,6 +215,11 @@ def build_blob():
     
     for mod in CORE:
         out.append("""extern unsigned char tp_%s[];"""%mod)
+    
+    if not os.path.exists(os.path.join(TOPDIR, 'tinypy', 'bc.c')):
+        do_chdir(os.path.join(TOPDIR,'tinypy'))
+        build_bc()
+        do_chdir(os.path.join(TOPDIR))
 
     for fname in ['list.c','dict.c','misc.c','string.c','builtins.c',
         'gc.c','ops.c','vm.c','tp.c','bc.c', 'sandbox.c']:
