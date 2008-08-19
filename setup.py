@@ -1,7 +1,7 @@
 import os
 import sys
 
-VARS = {}
+VARS = {'$CPYTHON':''}
 TOPDIR = os.path.abspath(os.path.dirname(__file__))
 TEST = False
 CLEAN = False
@@ -23,43 +23,52 @@ def main():
     DEBUG = 'debug' in sys.argv
     CLEAN = CLEAN or BOOT
     TEST = TEST or BOOT
-    
+        
     get_libs()
     build_mymain()
     
+    platform = sys.argv[2]
     cmd = sys.argv[1]
-    if cmd == 'linux':
+    if platform == 'linux':
         vars_linux()
-        build_gcc()
-    elif cmd == 'osx':
+    elif platform == 'osx':
         vars_osx()
-        build_gcc()
-    elif cmd == 'mingw':
+    elif platform == 'mingw':
         vars_windows()
-        build_gcc()
-    elif cmd == 'vs':
-        build_vs()
+    
+    if cmd == "plain":
+        if platform != 'vs':
+            build_gcc()
+        else:
+            build_vs()
     elif cmd == '64k':
         build_64k()
     elif cmd == 'blob':
         build_blob()
+    elif cmd == "cpython_build":
+        build_blob()
+        build_cpython()
+    elif cmd == "cpython_install":
+        install_cpython()
     else:
         print 'invalid command'
 
 HELP = """
-python setup.py command [options] [modules]
+python setup.py command platform [options] [modules]
 
 Commands:
+    plain - build a vanilla tinypy interpreter binary
+    64k - build a 64k version of the tinypy source
+    blob - build a single tinypy.c and tinypy.h
+    
+    cpython_build - build CPython module
+    cpython_install - install CPython module
+
+Platforms:
     linux - build tinypy for linux
     osx - build tinypy for OS X
     mingw - build tinypy for mingw under windows
     vs - build tinypy using Visual Studio 2005 / 2008
-    
-    64k - build a 64k version of the tinypy source
-    blob - build a single tinypy.c and tinypy.h
-    
-    build - build CPython module ***
-    install - install CPython module ***
     
 Options:
     test - run tests during build
@@ -112,6 +121,7 @@ def vars_windows():
     VARS['$FLAGS'] = '-lmingw32'
     VARS['$WFLAGS'] = '-Wwrite-strings -Wall'
     VARS['$SYS'] = '-mingw32'
+    VARS['$CPYTHON'] = "-c mingw32"
 
     if 'pygame' in MODULES:
         VARS['$FLAGS'] += ' -Ic:\\mingw\\include\\SDL -lSDLmain -lSDL '
@@ -408,5 +418,13 @@ def build_64k():
         f.close()
         print '%s saved to %s'%(src,dest)
 
+def build_cpython():
+    do_chdir(os.path.join(TOPDIR,'modules', 'cpython'))
+    do_cmd("python setup.py build $CPYTHON")
+    
+def install_cpython():
+    do_chdir(os.path.join(TOPDIR,'modules', 'cpython'))
+    do_cmd("python setup.py install $CPYTHON")
+    
 if __name__ == '__main__':
     main()
