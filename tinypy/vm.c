@@ -30,6 +30,9 @@ tp_vm *_tp_init(void) {
     tp_set(tp,tp->builtins,tp_string("MODULES"),tp->modules);
     tp_set(tp,tp->modules,tp_string("BUILTINS"),tp->builtins);
     tp_set(tp,tp->builtins,tp_string("BUILTINS"),tp->builtins);
+    tp_obj sys = tp_dict(tp);
+    tp_set(tp, sys, tp_string("version"), tp_string("tinypy 1.2+SVN"));
+    tp_set(tp,tp->modules, tp_string("sys"), sys);
     tp->regs = tp->_regs.list.val->items;
     tp_full(tp);
     return tp;
@@ -54,7 +57,6 @@ void tp_deinit(TP) {
     free(tp);
 }
 
-
 /* tp_frame_*/
 void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
     tp_frame_ f;
@@ -78,9 +80,13 @@ void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
 
 void _tp_raise(TP,tp_obj e) {
     if (!tp || !tp->jmp) {
+#ifndef CPYTHON_MOD
         printf("\nException:\n%s\n",TP_CSTR(e));
         exit(-1);
-        return;
+#else
+        tp->ex = e;
+        longjmp(tp->nextexpr,1);
+#endif
     }
     if (e.type != TP_NONE) { tp->ex = e; }
     tp_grey(tp,e);
@@ -110,8 +116,12 @@ void tp_handle(TP) {
         tp->frames[i].jmp = 0;
         return;
     }
+#ifndef CPYTHON_MOD
     tp_print_stack(tp);
     exit(-1);
+#else
+    longjmp(tp->nextexpr,1);
+#endif
 }
 
 /* Function: tp_call
@@ -167,7 +177,6 @@ tp_obj tp_call(TP,tp_obj self, tp_obj params) {
     }
     tp_params_v(tp,1,self); tp_print(tp);
     tp_raise(tp_None,"tp_call: %s is not callable",TP_CSTR(self));
-    
 }
 
 

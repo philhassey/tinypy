@@ -198,10 +198,13 @@ typedef struct tp_vm {
     tp_frame_ frames[TP_FRAMES];
     tp_obj _params;
     tp_obj params;
-    tp_obj _regs;
+    tp_obj _regs;   
     tp_obj *regs;
     tp_obj root;
     jmp_buf buf;
+#ifdef CPYTHON_MOD
+    jmp_buf nextexpr;
+#endif
     int jmp;
     tp_obj ex;
     char chars[256][2];
