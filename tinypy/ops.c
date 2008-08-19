@@ -284,7 +284,11 @@ tp_obj tp_add(TP,tp_obj a, tp_obj b) {
 tp_obj tp_mul(TP,tp_obj a, tp_obj b) {
     if (a.type == TP_NUMBER && a.type == b.type) {
         return tp_number(a.number.val*b.number.val);
-    } else if (a.type == TP_STRING && b.type == TP_NUMBER) {
+    } else if ((a.type == TP_STRING && b.type == TP_NUMBER) || 
+               (a.type == TP_NUMBER && b.type == TP_STRING)) {
+        if(a.type == TP_NUMBER) {
+            tp_obj c = a; a = b; b = c;
+        }
         int al = a.string.len; int n = b.number.val;
         if(n <= 0) {
             tp_obj r = tp_string_t(tp,0);
@@ -297,7 +301,6 @@ tp_obj tp_mul(TP,tp_obj a, tp_obj b) {
     }
     tp_raise(tp_None,"tp_mul(%s,%s)",TP_CSTR(a),TP_CSTR(b));
 }
-
 /* Function: tp_len
  * Returns the length of an object.
  *

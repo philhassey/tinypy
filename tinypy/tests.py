@@ -945,6 +945,14 @@ foo = A()
 print("OK")
 """, "OK")
 
+
+    #tests issue #20: test that string multiplication is commutative
+    t_render("""
+foo = "O"
+bar = "K"
+print(3 * foo, bar * 3)
+""", "OOOKKK")
+
 ################################################################################
 
 def t_boot(ss,ex,exact=True):
