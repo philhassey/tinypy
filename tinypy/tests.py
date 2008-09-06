@@ -1,7 +1,7 @@
 import sys
 is_tinypy = "tinypy" in sys.version
 if not is_tinypy:
-    from boot import *7
+    from boot import *
 import asm
 import disasm
 
