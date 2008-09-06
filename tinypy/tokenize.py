@@ -60,6 +60,8 @@ def do_tokenize(s,i,l):
         else: u_error('tokenize',s,T.f)
     indent(0)
     r = T.res; T = None
+    #for t in r:
+        #print (t.pos,t.type,t.val)
     return r
 
 def do_nl(s,i,l):
@@ -88,7 +90,6 @@ def indent(v):
         while len(T.indent) > n+1:
             v = T.indent.pop()
             T.add('dedent',v)
-
 
 def do_symbol(s,i,l):
     symbols = []

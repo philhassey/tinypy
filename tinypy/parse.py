@@ -29,6 +29,7 @@ class PData:
         self.pos = 0
         self.token = None
         self.stack = []
+        self._terminal = 0
     def init(self):
         global omap,dmap
         omap = cpy(base_dmap)
@@ -43,9 +44,17 @@ class PData:
         else:
             t = Token((0,0),'eof','eof')
         self.token = do(t)
+        
+        self._terminal += 1
+        if check(self.token,'nl','eof',';','dedent'):
+            self._terminal = 0
         return t
+        
+    def terminal(self):
+        if self._terminal > 1:
+            error('invalid statement',self.token)
+
 def error(ctx,t):
-    print t
     tokenize.u_error(ctx,P.s,t.pos)
 
 def nud(t):
@@ -184,24 +193,29 @@ def dict_nud(t):
 def advance(t=None):
     return P.advance(t)
 
-def block(indent=True):
+def iblock(items):
+    while check(P.token,'nl',';'): advance()
+    while True:
+        items.append(expression(0))
+        P.terminal()
+        while check(P.token,'nl',';'): advance()
+        if check(P.token,'dedent','eof'): break
+
+def block():
     items = []
     tok = P.token
     
-    if indent and check(P.token,'nl'):
+    if check(P.token,'nl'):
         while check(P.token,'nl'): advance()
         advance('indent')
-        while not check(P.token,'dedent'):
-            items.append(expression(0))
-            while check(P.token,';','nl'): advance()
+        iblock(items)
         advance('dedent')
     else:
-        if not indent:
-            while check(P.token,'nl'): advance()
         items.append(expression(0))
         while check(P.token,';'):
             advance(';')
             items.append(expression(0))
+        P.terminal()
     while check(P.token,'nl'): advance()
 
     if len(items) > 1:
@@ -288,12 +302,13 @@ def try_nud(t):
         advance(':')
         b = block()
         items.append(Token(tok.pos,'except','except',[a,b]))
-    if check(P.token,'else'):
-        tok = P.token
-        advance('else')
-        advance(':')
-        b = block()
-        items.append(Token(tok.pos,'else','else',[b]))
+    #commenting this out, i don't think this next bit is valid syntax??
+    #if check(P.token,'else'):
+        #tok = P.token
+        #advance('else')
+        #advance(':')
+        #b = block()
+        #items.append(Token(tok.pos,'else','else',[b]))
     return t
 def prefix_nud(t):
     #bp = 70
@@ -395,8 +410,8 @@ def do(t):
 def do_module():
     tok = P.token
     items = []
-    while not check(P.token,'eof'):
-        items.append(block(False))
+    iblock(items)
+    advance('eof')
     if len(items) > 1:
         return Token(tok.pos,'statements',';',items)
     return items.pop()

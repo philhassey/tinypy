@@ -35,8 +35,9 @@ def t_tokenize(s,exp=''):
     import tokenize
     result = tokenize.tokenize(s)
     res = ' '.join([t_show(t) for t in result])
-    #print(s); print(exp); print(res)
-    assert(res == exp)
+    if res != exp:
+        print(s); print(exp); print(res)
+        assert(res == exp)
 
 if __name__ == '__main__':
     t_tokenize("234",'234')
@@ -85,6 +86,17 @@ def t_parse(s,ex=''):
     r = t_lisp(tree)
     #print(s); print(ex); print(r)
     assert(r==ex)
+
+def t_unparse(s):
+    import tokenize, parse
+    ok = False
+    try:
+        tokens = tokenize.tokenize(s)
+        tree = parse.parse(s,tokens)
+    except:
+        ok = True
+    assert(ok == True)
+
 
 if __name__ == '__main__':
     t_parse('2+4*3', '(+ 2 (* 4 3))')
@@ -169,16 +181,34 @@ if __name__ == '__main__':
     t_parse('"""test"""','test')
     t_parse('return a,b','(return (, a b))')
     
+    
+
     # this should throw an error - bug #26
-    ok = False
-    try:
-        t_parse("""
+    t_unparse("""
 while 1:
 pass
-""","(while 1 pass)")
-    except:
-        ok = True
-    assert(ok == True)
+""")
+        
+    # test cases for python 2.x print statements - bug #17
+    # since this is python 2.x syntax it should output an syntax Exception
+    
+    # mini-block style
+    t_unparse("""
+def x(): print "OK"
+""")
+
+    # block level
+    t_unparse("""
+def x():
+    print "OK"
+""")
+
+    # module level
+    t_unparse("""
+print "OK"
+""")
+
+
         
 
 ################################################################################
@@ -564,7 +594,7 @@ except:
     
     t_render("""
 def test(a,b):
-    print a+b[2]
+    print (a+b[2])
 test(1,3)
 ""","Exception",False)
 
