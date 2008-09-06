@@ -13,9 +13,9 @@ class DState:
         self.stack,self.out,self._scopei,self.tstack,self._tagi,self.data = [],[('tag','EOF')],0,[],0,{}
         self.error = False
     def begin(self,gbl=False):
-        if len(self.stack): self.stack.append((self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs,self.tmpc))
+        if len(self.stack): self.stack.append((self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.rglobals,self.cregs,self.tmpc))
         else: self.stack.append(None)
-        self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs,self.tmpc = [],{},{},0,0,str(self._scopei),gbl,-1,[],['regs'],0
+        self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.rglobals,self.cregs,self.tmpc = [],{},{},0,0,str(self._scopei),gbl,-1,[],[],['regs'],0
         self._scopei += 1
         insert(self.cregs)
     def end(self):
@@ -28,7 +28,7 @@ class DState:
         assert(self.tmpc == 0) #REG
         
         if len(self.stack) > 1:
-            self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.cregs,self.tmpc = self.stack.pop()
+            self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.rglobals,self.cregs,self.tmpc = self.stack.pop()
         else: self.stack.pop()
 
 
@@ -408,6 +408,8 @@ def do_call(t,r=None):
 def do_name(t,r=None):
     if t.val in D.vars:
         return do_local(t,r)
+    if t.val not in D.rglobals:
+        D.rglobals.append(t.val)
     r = get_tmp(r)
     c = do_string(t)
     code(GGET,r,c)
@@ -415,6 +417,9 @@ def do_name(t,r=None):
     return r
 
 def do_local(t,r=None):
+    if t.val in D.rglobals:
+        D.error = True
+        tokenize.u_error('UnboundLocalError',D.code,t.pos)
     if t.val not in D.vars:
         D.vars.append(t.val)
     return get_reg(t.val)

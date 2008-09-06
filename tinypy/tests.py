@@ -243,6 +243,18 @@ def t_render(ss,ex,exact=True):
     else: 
         if ex not in res: showerror(cmd, ss, ex, res)
         assert(ex in res)
+        
+def t_unrender(s):
+    import tokenize, parse, encode
+        
+    ok = False
+    try:
+        tokens = tokenize.tokenize(s)
+        t = parse.parse(s,tokens)
+        r = encode.encode('tmp.tpc',s,t)
+    except:
+        ok = True
+    assert(ok == True)
 
 def test_range():
     t_render("""print(str(range(4))[:5])""","<list")
@@ -1013,6 +1025,13 @@ for i in x:
         y = "OK"
 print(y)
 ""","OK")
+
+    #test case for UnboundLocalError - bug #16
+    t_unrender("""
+def foo():
+    print(v)
+    v = "ERROR"
+""")
 
 ################################################################################
 
