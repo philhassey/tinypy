@@ -1,7 +1,7 @@
 import sys
 is_tinypy = "tinypy" in sys.version
 if not is_tinypy:
-    from boot import *
+    from boot import *7
 import asm
 import disasm
 
@@ -961,6 +961,16 @@ class A:
 o = A()
 print(o.foo)
 """, "OK")
+
+    #test case for possible register allocation bug #22
+    t_render("""
+x = [1, 2, 3]
+
+for i in x:
+    if i != 0 and i:
+        y = "OK"
+print(y)
+""","OK")
 ################################################################################
 
 def t_boot(ss,ex,exact=True):

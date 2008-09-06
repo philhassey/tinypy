@@ -192,17 +192,20 @@ def infix(i,tb,tc,r=None):
     if r != b: free_tmp(b)
     free_tmp(c)
     return r
-def ss_infix(ss,i,tb,tc,r=None):
+def ss_infix(ss,i,tb,tc,_r=None):
     r2 = get_tmp()
     ss = _do_number(ss)
     t = get_tag()
-    r = do(tb,r)
+    r = do(tb,_r)
+    if _r != r: free_tmp(_r) #REG
     code(EQ,r2,r,ss)
     code(IF,r2)
     jump(t,'else')
     jump(t,'end')
     tag(t,'else')
-    r = do(tc,r)
+    _r = r
+    r = do(tc,_r)
+    if _r != r: free_tmp(_r) #REG
     tag(t,'end')
     free_tmp(r2) #REG
     free_tmp(ss) #REG
@@ -633,6 +636,7 @@ def do(t,r=None):
     try:
         if t.type in rmap:
             return rmap[t.type](t,r)
+        #if r != None: free_reg(r) #REG
         return fmap[t.type](t)
     except:
         if D.error: raise
