@@ -7,6 +7,7 @@ TEST = False
 CLEAN = False
 BOOT = False
 DEBUG = False
+VALGRIND = False
 CORE = ['tokenize','parse','encode','py2bc']
 MODULES = []
 
@@ -16,66 +17,76 @@ def main():
         print HELP
         return
     
-    global TEST,CLEAN,BOOT,DEBUG
+    global TEST,CLEAN,BOOT,DEBUG,VALGRIND
     TEST = 'test' in sys.argv
     CLEAN = 'clean' in sys.argv
     BOOT = 'boot' in sys.argv
     DEBUG = 'debug' in sys.argv
+    VALGRIND = 'valgrind' in sys.argv
     CLEAN = CLEAN or BOOT
     TEST = TEST or BOOT
         
     get_libs()
     build_mymain()
+
+    build = None
     
-    platform = sys.argv[2]
-    cmd = sys.argv[1]
-    if platform == 'linux':
+    if "linux" in sys.platform:
         vars_linux()
-    elif platform == 'osx':
+        build = build_gcc
+    elif "darwin" in sys.platform:
         vars_osx()
-    elif platform == 'mingw':
+        build = build_gcc
+    elif "win" in sys.platform:
+        build = build_vs
+
+    #full list of compilers in distutils.ccompiler.show_compilers()
+    if "-cunix" in sys.argv:
+        build = build_gcc
+    elif '-cmsvc' in sys.argv:
+        build = build_vs
+    elif '-cmingw32' in sys.argv:
         vars_windows()
+        build = build_gcc
+
+    if build == None:
+        print "couldn't detect OS or incorrect compiler command. defaulting to GCC."
+        build = build_gcc
     
-    if cmd == "plain":
-        if platform != 'vs':
-            build_gcc()
-        else:
-            build_vs()
+    cmd = sys.argv[1]
+    if cmd == "tinypy":
+        build()
     elif cmd == '64k':
         build_64k()
     elif cmd == 'blob':
         build_blob()
-    elif cmd == "cpython_build":
+    elif cmd == "build":
         build_blob()
         build_cpython()
-    elif cmd == "cpython_install":
+    elif cmd == "install":
         install_cpython()
     else:
         print 'invalid command'
 
 HELP = """
-python setup.py command platform [options] [modules]
+python setup.py command [options] [modules]
 
 Commands:
-    plain - build a vanilla tinypy interpreter binary
-    64k - build a 64k version of the tinypy source
-    blob - build a single tinypy.c and tinypy.h
-    
-    cpython_build - build CPython module
-    cpython_install - install CPython module
+    tinypy - build a vanilla tinypy interpreter binary
+    64k - generate a 64k version of the tinypy source
+    blob - generate a single tinypy.c and tinypy.h
 
-Platforms:
-    linux - build tinypy for linux
-    osx - build tinypy for OS X
-    mingw - build tinypy for mingw under windows
-    vs - build tinypy using Visual Studio 2005 / 2008
-    
+    build - build CPython module
+    install - install CPython module
+
 Options:
     test - run tests during build
     clean - rebuild all .tpc during build
     boot - fully bootstrap and test tinypy
     debug - build with debug options on
-    
+    valgrind - run tests through valgrind
+    -cCOMPILER - build for a specific platform (-cmingw32, -clinux, -cmsvc, -cunix)
+
 Modules:
     math - build math module
     random - build random module *
@@ -83,6 +94,7 @@ Modules:
     marshal - build marshal module ***
     jit - build jit module ***
     re - build re module ***
+    ??? - build other modules in the modules folder
 
 * coming soon!!
 ** proof-of-concept included
@@ -132,6 +144,8 @@ def do_cmd(cmd):
     if '$' in cmd:
         print 'vars_error',cmd
         sys.exit(-1)
+    if VALGRIND and (cmd.startswith("./") or cmd.startswith("../")):
+        cmd = "valgrind " + cmd
     
     print cmd
     r = os.system(cmd)
@@ -424,12 +438,30 @@ def build_64k():
         print '%s saved to %s'%(src,dest)
 
 def build_cpython():
-    do_chdir(os.path.join(TOPDIR,'modules', 'cpython'))
-    do_cmd("python setup.py build $CPYTHON")
+    try: from distutils.core import setup, Extension
+    except: print "cannot import distutils"
+
+    do_chdir(os.path.join(TOPDIR,'cpython'))
+    setup(name = "tinypy",
+      version = "0.8",
+      description = "tinypy module for CPython",
+      author = "Denis Kasak",
+      author_email = "denis.kasak@gmail.com",
+      url = "http://www.tinypy.org/",
+      ext_modules = [Extension("tinypy", ["cpython.c"], define_macros = [('CPYTHON_MOD', None)])])
     
 def install_cpython():
-    do_chdir(os.path.join(TOPDIR,'modules', 'cpython'))
-    do_cmd("python setup.py install $CPYTHON")
+    try: from distutils.core import setup, Extension
+    except: print "cannot import distutils"
+
+    do_chdir(os.path.join(TOPDIR,'cpython'))
+    setup(name = "tinypy",
+      version = "0.8",
+      description = "tinypy module for CPython",
+      author = "Denis Kasak",
+      author_email = "denis.kasak@gmail.com",
+      url = "http://www.tinypy.org/",
+      ext_modules = [Extension("tinypy", ["cpython.c"], define_macros = [('CPYTHON_MOD', None)])])
     
 if __name__ == '__main__':
     main()
