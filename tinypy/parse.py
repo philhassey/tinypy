@@ -184,18 +184,20 @@ def dict_nud(t):
 def advance(t=None):
     return P.advance(t)
 
-def block():
+def block(indent=True):
     items = []
     tok = P.token
-
-    while check(P.token,'nl'): advance()
-    if check(P.token,'indent'):
+    
+    if indent and check(P.token,'nl'):
+        while check(P.token,'nl'): advance()
         advance('indent')
         while not check(P.token,'dedent'):
             items.append(expression(0))
             while check(P.token,';','nl'): advance()
         advance('dedent')
     else:
+        if not indent:
+            while check(P.token,'nl'): advance()
         items.append(expression(0))
         while check(P.token,';'):
             advance(';')
@@ -394,7 +396,7 @@ def do_module():
     tok = P.token
     items = []
     while not check(P.token,'eof'):
-        items.append(block())
+        items.append(block(False))
     if len(items) > 1:
         return Token(tok.pos,'statements',';',items)
     return items.pop()

@@ -168,6 +168,18 @@ if __name__ == '__main__':
     t_parse('return\nx','(; return x)')
     t_parse('"""test"""','test')
     t_parse('return a,b','(return (, a b))')
+    
+    # this should throw an error - bug #26
+    ok = False
+    try:
+        t_parse("""
+while 1:
+pass
+""","(while 1 pass)")
+    except:
+        ok = True
+    assert(ok == True)
+        
 
 ################################################################################
 
@@ -971,6 +983,7 @@ for i in x:
         y = "OK"
 print(y)
 ""","OK")
+
 ################################################################################
 
 def t_boot(ss,ex,exact=True):
