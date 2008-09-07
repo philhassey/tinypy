@@ -25,7 +25,9 @@ class DState:
         # This next line forces the encoder to
         # throw an exception if any tmp regs 
         # were leaked within the frame
-        assert(self.tmpc == 0) #REG
+        # assert(self.tmpc == 0) #REG
+        if self.tmpc != 0:
+            print("Warning:\nencode.py contains a register leak\n")
         
         if len(self.stack) > 1:
             self.vars,self.r2n,self.n2r,self._tmpi,self.mreg,self.snum,self._globals,self.lineno,self.globals,self.rglobals,self.cregs,self.tmpc = self.stack.pop()
