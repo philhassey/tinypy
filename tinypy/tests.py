@@ -992,7 +992,7 @@ def t_api(ss_py,ss,ex):
     system_rm("tmp")
     system_rm(TMP)
     save(fname,ss)
-    system("gcc tmp.c -lm -o tmp")
+    system("gcc tmp.c -Wall -g -lm -o tmp")
     cmd = "./tmp > "+TMP
     system(cmd)
     res = load(TMP).strip()
@@ -1037,6 +1037,7 @@ tp_obj test(TP) {
     tp_obj v = TP_OBJ();
     tp_params_v(tp,1,v);
     tp_print(tp);
+    return tp_None;
 }
 int main(int argc, char *argv[]) {
     tp_vm *tp = tp_init(argc,argv);
@@ -1065,12 +1066,14 @@ tp_obj A_init(TP) {
     tp_obj self = TP_TYPE(TP_DICT);
     tp_obj v = TP_OBJ();
     tp_set(tp,self,tp_string("value"),v);
+    return tp_None;
 }
 tp_obj A_test(TP) {
     tp_obj self = TP_TYPE(TP_DICT);
     tp_obj v = tp_get(tp,self,tp_string("value"));
     tp_params_v(tp,1,v);
     tp_print(tp);
+    return tp_None;
 }
 int main(int argc, char *argv[]) {
     tp_vm *tp = tp_init(argc,argv);
