@@ -4,7 +4,7 @@
 
 tp_vm *_tp_init(void) {
     int i;
-    tp_vm *tp = (tp_vm*)malloc(sizeof(tp_vm));
+    tp_vm *tp = (tp_vm*)calloc(sizeof(tp_vm),1);
     tp->time_limit = TP_NO_LIMIT;
     tp->clocks = clock();
     tp->time_elapsed = 0.0;
