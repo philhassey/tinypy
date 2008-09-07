@@ -943,7 +943,7 @@ setmeta(B, A)
 
 foo = A()
 print("OK")
-""", "OK")
+""", "tp_lookup",False)
 
 
     #tests issue #20: test that string multiplication is commutative
@@ -951,7 +951,7 @@ print("OK")
 foo = "O"
 bar = "K"
 print(3 * foo, bar * 3)
-""", "OOOKKK")
+""", "OOO KKK")
 
 ################################################################################
 

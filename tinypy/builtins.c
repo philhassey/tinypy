@@ -181,19 +181,24 @@ tp_obj tp_mtime(TP) {
     tp_raise(tp_None,"tp_mtime(%s)",s);
 }
 
-int _tp_lookup(TP,tp_obj self, tp_obj k, tp_obj *meta) {
+int _tp_lookup_(TP,tp_obj self, tp_obj k, tp_obj *meta, int depth) {
     int n = _tp_dict_find(tp,self.dict.val,k);
     if (n != -1) {
         *meta = self.dict.val->items[n].val;
         return 1;
     }
-    if (self.dict.dtype && self.dict.val->meta.type == TP_DICT && _tp_lookup(tp,self.dict.val->meta,k,meta)) {
+    depth--; if (!depth) { tp_raise(0,"tp_lookup recursion depth exceeded",0); }
+    if (self.dict.dtype && self.dict.val->meta.type == TP_DICT && _tp_lookup_(tp,self.dict.val->meta,k,meta,depth)) {
         if (self.dict.dtype == 2 && meta->type == TP_FNC) {
             *meta = tp_fnc_new(tp,meta->fnc.ftype|2,meta->fnc.val,self,meta->fnc.info->globals);
         }
         return 1;
     }
     return 0;
+}
+
+int _tp_lookup(TP,tp_obj self, tp_obj k, tp_obj *meta) {
+    return _tp_lookup_(tp,self,k,meta,8);
 }
 
 #define TP_META_BEGIN(self,name) \
