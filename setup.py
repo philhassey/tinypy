@@ -178,7 +178,7 @@ def open_tinypy(fname,*args):
 def build_blob():
     mods = CORE[:]
     do_chdir(os.path.join(TOPDIR,'tinypy'))
-    for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
+    for mod in mods: py2bc('python py2bc.py $SRC $DEST',mod)
     do_chdir(os.path.join(TOPDIR))
     
     out = []
@@ -352,14 +352,14 @@ def build_vs():
     os.chdir(os.path.join(TOPDIR,'tinypy'))
     do_cmd('cl vmmain.c /Od /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe')
     do_cmd('python tests.py -win')
-    for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
+    for mod in mods: py2bc('python py2bc.py $SRC $DEST',mod)
     do_cmd('vm.exe tests.tpc -win')
-    for mod in mods: do_cmd('vm.exe py2bc.tpc %s.py %s.tpc'%(mod,mod))
+    for mod in mods: py2bc('vm.exe py2bc.tpc $SRC $DEST',mod)
     build_bc()
     do_cmd('cl /Od tpmain.c /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe')
     #second pass - builts optimized binaries and stuff
     do_cmd('tinypy.exe tests.py -win')
-    for mod in mods: do_cmd('tinypy.exe py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
+    for mod in mods: py2bc('tinypy.exe py2bc.py $SRC $DEST'+nopos,mod)
     build_bc(True)
     do_cmd('cl /Os vmmain.c /D "NDEBUG" /Gy /GL /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe /link /opt:ref /opt:icf')
     do_cmd('cl /Os tpmain.c /D "NDEBUG" /Gy /GL /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe /link /opt:ref,icf /OPT:NOWIN98')
