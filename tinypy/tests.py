@@ -1118,8 +1118,18 @@ def t_asm(ass, ex, exact=True):
     cmd = VM + fname + " > " + TMP
     system(cmd)
     res = load("tmp.txt").strip()
-    if exact: assert(ex == res)
-    else: assert(ex in res)
+    if exact:
+        if ex != res:
+            print (ass)
+            print (ex)
+            print (res)
+            assert(ex == res)
+    else:
+        if ex not in res:
+            print (ass)
+            print (ex)
+            print (res)
+            assert(ex in res)
     
 if is_boot == True and __name__ == '__main__':
     print("# t_asm")
