@@ -46,9 +46,11 @@ Tinypy_init(TinypyObject *self, PyObject *args, PyObject *kwds)
     self->vm = tp_init(0, NULL);
     double time = 5*1000;       /* 5 seconds default */
     long mem = 16*1024*1024;    /* 16 megabytes default */
+    static char *kwlist[] = { "time", "mem", 0 };
 
-    if (!PyArg_ParseTuple(args, "|dl", &time, &mem)) {
-        return 0;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|dl",
+        kwlist, &time, &mem)) {
+        return -1;
     }
     tp_sandbox(self->vm, time, mem);
 
@@ -63,14 +65,16 @@ Tinypy_destruct(PyObject *self)
 }
 
 static PyObject *
-Tinypy_exec(TinypyObject *self, PyObject *args)
+Tinypy_exec(TinypyObject *self, PyObject *args, PyObject *kwds)
 {
     tp_obj obj;
     tp_vm *tp = self->vm;
     PyObject *ret, *TinypyError, *TinypyModule;
+    static char *kwlist[] = { "code", "time", 0 };
     const char *code;
 
-    if (!PyArg_ParseTuple(args, "s|d", &code, &tp->time_limit)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|d",
+        kwlist, &code, &tp->time_limit)) {
         return NULL;
     }
 
@@ -94,7 +98,7 @@ Tinypy_exec(TinypyObject *self, PyObject *args)
 }
 
 static PyMethodDef Tinypy_methods[] = {
-    {"execute", (PyCFunction)Tinypy_exec, METH_VARARGS,
+    {"execute", (PyCFunction)Tinypy_exec, METH_VARARGS | METH_KEYWORDS,
      "Execute code supplied as the argument on the tinypy interpreter"
     },
     {NULL}  /* Sentinel */
