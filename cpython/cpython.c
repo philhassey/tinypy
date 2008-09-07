@@ -10,11 +10,14 @@ typedef struct {
 static PyObject *
 Tinypy_ConvertObj(tp_obj obj)
 {
-    PyObject *TinypyError, *TinypyModule, *TinypyDict;
+    PyObject *TinypyError, *TinypyModule;
 
-    TinypyModule = PyImport_ImportModule("tinypy");
-    TinypyDict = PyModule_GetDict(TinypyModule);
-    TinypyError = PyDict_GetItemString(TinypyDict, "error");
+    if(!(TinypyModule = PyImport_ImportModule("tinypy"))) {
+        return NULL;
+    }
+    if(!(TinypyError = PyObject_GetAttrString(TinypyModule, "error"))) {
+        return NULL;
+    }
     if(obj.type == TP_NUMBER) {
         tp_num v = obj.number.val;
         if ((fabs(v)-fabs((long)v)) < 0.000001) {
@@ -56,7 +59,7 @@ static void
 Tinypy_destruct(PyObject *self)
 {
     tp_deinit(((TinypyObject *) self)->vm);
-    PyMem_DEL(self);
+    PyMem_Del(self);
 }
 
 static PyObject *
@@ -64,7 +67,7 @@ Tinypy_exec(TinypyObject *self, PyObject *args)
 {
     tp_obj obj;
     tp_vm *tp = self->vm;
-    PyObject *ret, *TinypyError, *TinypyModule, *TinypyDict;
+    PyObject *ret, *TinypyError, *TinypyModule;
     const char *code;
 
     if (!PyArg_ParseTuple(args, "s|d", &code, &tp->time_limit)) {
@@ -73,9 +76,12 @@ Tinypy_exec(TinypyObject *self, PyObject *args)
 
     tp->time_elapsed = 0;
     tp->mem_exceeded = 0;
-    TinypyModule = PyImport_ImportModule("tinypy");
-    TinypyDict = PyModule_GetDict(TinypyModule);
-    TinypyError = PyDict_GetItemString(TinypyDict, "error");
+    if(!(TinypyModule = PyImport_ImportModule("tinypy"))) {
+        return NULL;
+    }
+    if(!(TinypyError = PyObject_GetAttrString(TinypyModule, "error"))) {
+        return NULL;
+    }
     if(setjmp(tp->nextexpr)) {
         --(tp->cur);
         PyErr_SetString(TinypyError, TP_CSTR(tp->ex));
@@ -145,19 +151,23 @@ inittinypy(void)
     PyObject *TinypyError;
 
     TinypyType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&TinypyType) < 0)
+    if (PyType_Ready(&TinypyType) < 0) {
         return;
+    }
 
     m = Py_InitModule3("tinypy", tinypy_methods,
                        "tinypy - a small Python subset interpreter");
     if (m == NULL) {
-      return;
+        return;
     }
 
     Py_INCREF(&TinypyType);
-    PyModule_AddObject(m, "Tinypy", (PyObject *)&TinypyType);
-
+    if(PyModule_AddObject(m, "Tinypy", (PyObject *)&TinypyType) < 0) {
+        return;
+    }
     TinypyError = PyErr_NewException("tinypy.error", NULL, NULL);
     Py_INCREF(TinypyError);
-    PyModule_AddObject(m, "error", TinypyError);
+    if(PyModule_AddObject(m, "error", TinypyError) < 0) {
+        return;
+    }
 }
