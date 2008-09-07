@@ -10,8 +10,11 @@ typedef struct {
 static PyObject *
 Tinypy_ConvertObj(tp_obj obj)
 {
-    int i;
-    
+    PyObject *TinypyError, *TinypyModule, *TinypyDict;
+
+    TinypyModule = PyImport_ImportModule("tinypy");
+    TinypyDict = PyModule_GetDict(TinypyModule);
+    TinypyError = PyDict_GetItemString(TinypyDict, "error");
     if(obj.type == TP_NUMBER) {
         tp_num v = obj.number.val;
         if ((fabs(v)-fabs((long)v)) < 0.000001) {
@@ -28,24 +31,8 @@ Tinypy_ConvertObj(tp_obj obj)
         Py_INCREF(Py_None);
         return Py_None;
     }
-    else if(obj.type == TP_LIST) {
-        PyObject *plist = PyList_New(0);
-        for(i = 0; i < obj.list.val->len; ++i) {
-            PyList_Append(plist, Tinypy_ConvertObj(obj.list.val->items[i]));
-        }
-        return plist;
-    }
-    else if(obj.type == TP_DICT) {
-        PyObject *pdict = PyDict_New();
-        for(i = 0; i < obj.dict.val->alloc; ++i) {
-            tp_item cur = obj.dict.val->items[i];
-            if(cur.used) {
-                PyDict_SetItemString(pdict, cur.key.string.val, Tinypy_ConvertObj(cur.val));
-            }
-        }
-        return pdict;
-    }
     else {
+        PyErr_SetString(TinypyError, "can only return strings, numbers and None");
         return NULL;
     }
 }
@@ -56,7 +43,7 @@ Tinypy_init(TinypyObject *self, PyObject *args, PyObject *kwds)
     self->vm = tp_init(0, NULL);
     double time = 5*1000;       /* 5 seconds default */
     long mem = 16*1024*1024;    /* 16 megabytes default */
-    
+
     if (!PyArg_ParseTuple(args, "|dl", &time, &mem)) {
         return 0;
     }
@@ -74,16 +61,16 @@ Tinypy_destruct(PyObject *self)
 
 static PyObject *
 Tinypy_exec(TinypyObject *self, PyObject *args)
-{    
+{
     tp_obj obj;
     tp_vm *tp = self->vm;
     PyObject *ret, *TinypyError, *TinypyModule, *TinypyDict;
     const char *code;
-    
+
     if (!PyArg_ParseTuple(args, "s|d", &code, &tp->time_limit)) {
         return NULL;
     }
-    
+
     tp->time_elapsed = 0;
     tp->mem_exceeded = 0;
     TinypyModule = PyImport_ImportModule("tinypy");
@@ -91,7 +78,7 @@ Tinypy_exec(TinypyObject *self, PyObject *args)
     TinypyError = PyDict_GetItemString(TinypyDict, "error");
     if(setjmp(tp->nextexpr)) {
         --(tp->cur);
-        PyErr_SetString(TinypyError, TP_CSTR(tp->ex));      
+        PyErr_SetString(TinypyError, TP_CSTR(tp->ex));
         return NULL;
     }
     tp->clocks = clock();
@@ -152,7 +139,7 @@ static PyTypeObject TinypyType = {
 };
 
 PyMODINIT_FUNC
-inittinypy(void) 
+inittinypy(void)
 {
     PyObject *m;
     PyObject *TinypyError;
@@ -166,10 +153,10 @@ inittinypy(void)
     if (m == NULL) {
       return;
     }
-    
+
     Py_INCREF(&TinypyType);
     PyModule_AddObject(m, "Tinypy", (PyObject *)&TinypyType);
-    
+
     TinypyError = PyErr_NewException("tinypy.error", NULL, NULL);
     Py_INCREF(TinypyError);
     PyModule_AddObject(m, "error", TinypyError);
