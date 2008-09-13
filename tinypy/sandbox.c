@@ -8,9 +8,7 @@ void tp_mem_update(TP) {
        (tp->mem_used > tp->mem_limit) && 
        (tp->mem_limit != TP_NO_LIMIT)) {
         tp->mem_exceeded = 1;
-        tp_raise(,"memory_limit_exceeded: %lu (limit: %lu)", 
-                (unsigned long) tp->mem_used, 
-                (unsigned long) tp->mem_limit);
+        tp_raise(,tp_string("(tp_mem_update) SandboxError: memory limit exceeded"));
     }
 }
 
@@ -21,7 +19,7 @@ void tp_time_update(TP) {
         tp->clocks = clock();
         tp->time_elapsed += ((double) (tp->clocks - tmp) / CLOCKS_PER_SEC) * 1000.0;
         if(tp->time_elapsed >= tp->time_limit)
-            tp_raise(,"time_limit_exceeded: %.4lf (limit: %.4lf)", tp->time_elapsed, tp->time_limit);
+            tp_raise(,tp_string("(tp_time_update) SandboxError: time limit exceeded"));
     }
 }
 

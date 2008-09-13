@@ -73,7 +73,9 @@ void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
     f.fname = tp_string("?");
     f.cregs = 0;
 /*     return f;*/
-    if (f.regs+256 >= tp->regs+TP_REGS || tp->cur >= TP_FRAMES-1) { tp_raise(,"tp_frame: stack overflow %d",tp->cur); }
+    if (f.regs+256 >= tp->regs+TP_REGS || tp->cur >= TP_FRAMES-1) {
+        tp_raise(,tp_string("(tp_frame) RuntimeError: stack overflow"));
+    }
     tp->cur += 1;
     tp->frames[tp->cur] = f;
 }
@@ -81,7 +83,7 @@ void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
 void _tp_raise(TP,tp_obj e) {
     if (!tp || !tp->jmp) {
 #ifndef CPYTHON_MOD
-        printf("\nException:\n%s\n",TP_CSTR(e));
+        printf("\nException:\n"); tp_echo(tp,e); printf("\n");
         exit(-1);
 #else
         tp->ex = e;
@@ -98,11 +100,12 @@ void tp_print_stack(TP) {
     printf("\n");
     for (i=0; i<=tp->cur; i++) {
         if (!tp->frames[i].lineno) { continue; }
-        printf("File \"%s\", line %d, in %s\n  %s\n",
-            TP_CSTR(tp->frames[i].fname),tp->frames[i].lineno,
-            TP_CSTR(tp->frames[i].name),TP_CSTR(tp->frames[i].line));
+        printf("File \""); tp_echo(tp,tp->frames[i].fname); printf("\", ");
+        printf("line %d, in ",tp->frames[i].lineno);
+        tp_echo(tp,tp->frames[i].name); printf("\n ");
+        tp_echo(tp,tp->frames[i].line); printf("\n");
     }
-    printf("\nException:\n%s\n",TP_CSTR(tp->ex));
+    printf("\nException:\n"); tp_echo(tp,tp->ex); printf("\n");
 }
 
 void tp_handle(TP) {
@@ -176,7 +179,7 @@ tp_obj tp_call(TP,tp_obj self, tp_obj params) {
         return dest;
     }
     tp_params_v(tp,1,self); tp_print(tp);
-    tp_raise(tp_None,"tp_call: %s is not callable",TP_CSTR(self));
+    tp_raise(tp_None,tp_string("(tp_call) TypeError: object is not callable"));
 }
 
 
@@ -224,7 +227,7 @@ int tp_step(TP) {
     tp_code e = *cur;
     /*
      fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur-f->codes,tp_strings[e.i],VA,VB,VC);
-       int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,TP_CSTR(regs[i])); }
+       int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,TP_xSTR(regs[i])); }
     */
     switch (e.i) {
         case TP_IEOF: tp_return(tp,tp_None); SR(0); break;
@@ -299,7 +302,9 @@ int tp_step(TP) {
         case TP_IFILE: f->fname = RA; break;
         case TP_INAME: f->name = RA; break;
         case TP_IREGS: f->cregs = VA; break;
-        default: tp_raise(0,"tp_step: invalid instruction %d",e.i); break;
+        default:
+            tp_raise(0,tp_string("(tp_step) RuntimeError: invalid instruction"));
+            break;
     }
     tp_time_update(tp);
     tp_mem_update(tp);
@@ -329,6 +334,36 @@ tp_obj tp_ez_call(TP, const char *mod, const char *fnc, tp_obj params) {
     return tp_call(tp,tmp,params);
 }
 
+tp_obj _tp_import(TP, tp_obj fname, tp_obj name, void *codes) {
+    tp_obj code = tp_None;
+    tp_obj g;
+
+    if (!((fname.type != TP_NONE && _tp_str_index(fname,tp_string(".tpc"))!=-1) || codes)) {
+        return tp_ez_call(tp,"py2bc","import_fname",tp_params_v(tp,2,fname,name));
+    }
+
+    if (!codes) {
+        tp_params_v(tp,1,fname);
+        code = tp_load(tp);
+        /* We cast away the constness. */
+        codes = (void *)code.string.val;
+    } else {
+        code = tp_data(tp,0,codes);
+    }
+
+    g = tp_dict(tp);
+    tp_set(tp,g,tp_string("__name__"),name);
+    tp_set(tp,g,tp_string("__code__"),code);
+    tp_set(tp,g,tp_string("__dict__"),g);
+    tp_frame(tp,g,(tp_code*)codes,0);
+    tp_set(tp,tp->modules,name,g);
+
+    if (!tp->jmp) { tp_run(tp,tp->cur); }
+
+    return g;
+}
+
+
 /* Function: tp_import
  * Imports a module.
  * 
@@ -340,33 +375,9 @@ tp_obj tp_ez_call(TP, const char *mod, const char *fnc, tp_obj params) {
  * Returns:
  * The module object.
  */
-tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
-    tp_obj code = tp_None;
-    tp_obj g;
-
-    if (!((fname && strstr(fname,".tpc")) || codes)) {
-        return tp_ez_call(tp,"py2bc","import_fname",tp_params_v(tp,2,tp_string(fname),tp_string(name)));
-    }
-
-    if (!codes) {
-        tp_params_v(tp,1,tp_string(fname));
-        code = tp_load(tp);
-        /* We cast away the constness. */
-        codes = (void *)code.string.val;
-    } else {
-        code = tp_data(tp,0,codes);
-    }
-
-    g = tp_dict(tp);
-    tp_set(tp,g,tp_string("__name__"),tp_string(name));
-    tp_set(tp,g,tp_string("__code__"),code);
-    tp_set(tp,g,tp_string("__dict__"),g);
-    tp_frame(tp,g,(tp_code*)codes,0);
-    tp_set(tp,tp->modules,tp_string(name),g);
-
-    if (!tp->jmp) { tp_run(tp,tp->cur); }
-
-    return g;
+tp_obj tp_import(TP, const char * fname, const char * name, void *codes) {
+    tp_obj f = fname?tp_string(fname):tp_None;
+    return _tp_import(tp,f,tp_string(name),codes);
 }
 
 
@@ -381,15 +392,13 @@ tp_obj tp_exec_(TP) {
 
 tp_obj tp_import_(TP) {
     tp_obj mod = TP_OBJ();
-    char const *s;
     tp_obj r;
 
     if (tp_has(tp,tp->modules,mod).number.val) {
         return tp_get(tp,tp->modules,mod);
     }
-
-    s = TP_CSTR(mod);
-    r = tp_import(tp,TP_CSTR(tp_add(tp,mod,tp_string(".tpc"))),s,0);
+    
+    r = _tp_import(tp,tp_add(tp,mod,tp_string(".tpc")),mod,0);
     return r;
 }
 

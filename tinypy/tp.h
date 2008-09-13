@@ -265,22 +265,54 @@ tp_obj tp_call(TP, tp_obj fnc, tp_obj params);
  * This macro will return from the current function returning "r". The
  * remaining parameters are used to format the exception message.
  */
+/*
 #define tp_raise(r,fmt,...) { \
     _tp_raise(tp,tp_printf(tp,fmt,__VA_ARGS__)); \
     return r; \
 }
-/*#define TP_CSTR(v) ((tp_str(tp,(v))).string.val)*/
-tp_inline static const char *TP_CSTR_(TP,tp_obj v) {
-    if (v.string.val[v.string.len] != 0) {
-        tp_raise(0,"TP_CSTR_(%s)",v.string.val);
-    }
-    return v.string.val;
+*/
+#define tp_raise(r,v) { \
+    _tp_raise(tp,v); \
+    return r; \
 }
-#define TP_CSTR(v) TP_CSTR_(tp,tp_str(tp,(v)))
+
+/* Function: tp_string
+ * Creates a new string object from a C string.
+ * 
+ * Given a pointer to a C string, creates a tinypy object representing the
+ * same string.
+ * 
+ * *Note* Only a reference to the string will be kept by tinypy, so make sure
+ * it does not go out of scope, and don't de-allocate it. Also be aware that
+ * tinypy will not delete the string for you. In many cases, it is best to
+ * use <tp_string_t> or <tp_string_slice> to create a string where tinypy
+ * manages storage for you.
+ */
+tp_inline static tp_obj tp_string(char const *v) {
+    tp_obj val;
+    tp_string_ s = {TP_STRING, 0, v, 0};
+    s.len = strlen(v);
+    val.string = s;
+    return val;
+}
+
+#define TP_CSTR_LEN 256
+
+tp_inline static void tp_cstr(TP,tp_obj v, char *s, int l) {
+    if (v.type != TP_STRING) { 
+        tp_raise(,tp_string("(tp_cstr) TypeError: value not a string"));
+    }
+    if (v.string.len >= l) {
+        tp_raise(,tp_string("(tp_cstr) TypeError: value too long"));
+    }
+    memset(s,0,l);
+    memcpy(s,v.string.val,v.string.len);
+}
+
 
 #define TP_OBJ() (tp_get(tp,tp->params,tp_None))
 tp_inline static tp_obj tp_type(TP,int t,tp_obj v) {
-    if (v.type != t) { tp_raise(tp_None,"_tp_type(%d,%s)",t,TP_CSTR(v)); }
+    if (v.type != t) { tp_raise(tp_None,tp_string("(tp_type) TypeError: unexpected type")); }
     return v;
 }
 
@@ -289,7 +321,8 @@ tp_inline static tp_obj tp_type(TP,int t,tp_obj v) {
 #define TP_NO_LIMIT 0
 #define TP_TYPE(t) tp_type(tp,t,TP_OBJ())
 #define TP_NUM() (TP_TYPE(TP_NUMBER).number.val)
-#define TP_STR() (TP_CSTR(TP_TYPE(TP_STRING)))
+/* #define TP_STR() (TP_CSTR(TP_TYPE(TP_STRING))) */
+#define TP_STR() (TP_TYPE(TP_STRING))
 #define TP_DEFAULT(d) (tp->params.list.val->len?tp_get(tp,tp->params,tp_None):(d))
 
 /* Macro: TP_LOOP
@@ -329,24 +362,9 @@ tp_inline static tp_obj tp_number(tp_num v) {
     return val;
 }
 
-/* Function: tp_string
- * Creates a new string object from a C string.
- * 
- * Given a pointer to a C string, creates a tinypy object representing the
- * same string.
- * 
- * *Note* Only a reference to the string will be kept by tinypy, so make sure
- * it does not go out of scope, and don't de-allocate it. Also be aware that
- * tinypy will not delete the string for you. In many cases, it is best to
- * use <tp_string_t> or <tp_string_slice> to create a string where tinypy
- * manages storage for you.
- */
-tp_inline static tp_obj tp_string(char const *v) {
-    tp_obj val;
-    tp_string_ s = {TP_STRING, 0, v, 0};
-    s.len = strlen(v);
-    val.string = s;
-    return val;
+tp_inline static void tp_echo(TP,tp_obj e) {
+    e = tp_str(tp,e);
+    fwrite(e.string.val,1,e.string.len,stdout);
 }
 
 /* Function: tp_string_n
@@ -362,5 +380,6 @@ tp_inline static tp_obj tp_string_n(char const *v,int n) {
     val.string = s;
     return val;
 }
+
 
 #endif

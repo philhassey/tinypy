@@ -5,7 +5,9 @@ void _tp_list_realloc(TP, _tp_list *self,int len) {
 }
 
 void _tp_list_set(TP,_tp_list *self,int k, tp_obj v, const char *error) {
-    if (k >= self->len) { tp_raise(,"%s: KeyError: %d\n",error,k); }
+    if (k >= self->len) {
+        tp_raise(,tp_string("(_tp_list_set) KeyError"));
+    }
     self->items[k] = v;
     tp_grey(tp,v);
 }
@@ -15,7 +17,9 @@ void _tp_list_free(TP, _tp_list *self) {
 }
 
 tp_obj _tp_list_get(TP,_tp_list *self,int k,const char *error) {
-    if (k >= self->len) { tp_raise(tp_None,"%s: KeyError: %d\n",error,k); }
+    if (k >= self->len) {
+        tp_raise(tp_None,tp_string("(_tp_list_set) KeyError"));
+    }
     return self->items[k];
 }
 void _tp_list_insertx(TP,_tp_list *self, int n, tp_obj v) {
@@ -57,7 +61,9 @@ tp_obj tp_index(TP) {
     tp_obj self = TP_OBJ();
     tp_obj v = TP_OBJ();
     int i = _tp_list_find(tp,self.list.val,v);
-    if (i < 0) { tp_raise(tp_None,"tp_index(%s,%s) - item not found",TP_CSTR(self),TP_CSTR(v)); }
+    if (i < 0) {
+        tp_raise(tp_None,tp_string("(tp_index) ValueError: list.index(x): x not in list"));
+    }
     return tp_number(i);
 }
 

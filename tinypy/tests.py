@@ -194,6 +194,7 @@ def t_render(ss,ex,exact=True):
     cmd = VM + fname + " > tmp.txt"
     system(cmd)
     res = load(TMP).strip()
+    
     #print(ss,ex,res)
     if exact:
         if res != ex: showerror(cmd, ss, ex, res)
@@ -913,7 +914,7 @@ print(foo)
 sandbox(1, False)
 while True: 
     pass
-""", "time_limit_exceeded", False)
+""", "SandboxError", False)
 
     #test that calling sandbox() removes the sandbox builtin
     t_render("""
@@ -928,7 +929,7 @@ except:
     t_render("""
 sandbox(False, 1)
 a = 42
-""", "memory_limit_exceeded", False)
+""", "SandboxError", False)
 
     #test that circular inheritance doesn't cause an infinite lookup chain
     t_render("""

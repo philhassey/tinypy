@@ -129,7 +129,7 @@ tp_obj tp_str_index(TP) {
     tp_obj v = TP_OBJ();
     int n = _tp_str_index(s,v);
     if (n >= 0) { return tp_number(n); }
-    tp_raise(tp_None,"tp_str_index(%s,%s)",TP_CSTR(s),TP_CSTR(v));
+    tp_raise(tp_None,tp_string("(tp_str_index) ValueError: substring not found"));
 }
 
 tp_obj tp_str2(TP) {
@@ -142,13 +142,17 @@ tp_obj tp_chr(TP) {
     return tp_string_n(tp->chars[(unsigned char)v],1);
 }
 tp_obj tp_ord(TP) {
-    char const *s = TP_STR();
-    return tp_number((unsigned char)s[0]);
+    tp_obj s = TP_STR();
+    if (s.string.len != 1) {
+        tp_raise(tp_None,tp_string("(tp_ord) TypeError: ord() expected a character"));
+    }
+    return tp_number((unsigned char)s.string.val[0]);
 }
 
 tp_obj tp_strip(TP) {
-    char const *v = TP_STR();
-    int i, l = strlen(v); int a = l, b = 0;
+    tp_obj o = TP_TYPE(TP_STRING);
+    char const *v = o.string.val; int l = o.string.len;
+    int i; int a = l, b = 0;
     tp_obj r;
     char *s;
     for (i=0; i<l; i++) {
