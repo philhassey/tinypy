@@ -1245,7 +1245,7 @@ CALL 1 0 1
 EOF 0 0 0
 """, "foo");
 
-    #test that function definitions longer than the bytecode are properly sanitised
+    #test that function definitions longer than the bytecode are properly sanitized
     t_asm("""
 DEF 0 0 100
 REGS 2 0 0
@@ -1255,19 +1255,19 @@ PASS 0 0 0
 EOF 0 0 0
 """, "SandboxError", False)
 
-    #test that negative out of bounds jumps are sanitised
+    #test that negative out of bounds jumps are sanitized
     t_asm("""
 JUMP 0 127 255
 EOF 0 0 0
 """, "SandboxError", False)
     
-    #test that positive out of bounds jumps are sanitised
+    #test that positive out of bounds jumps are sanitized
     t_asm("""
 JUMP 0 128 0
 EOF 0 0 0
 """, "SandboxError", False)
 
-    #test that strings with boundaries beyond the end of the bytecode are properly sanitised
+    #test that strings with boundaries beyond the end of the bytecode are properly sanitized
     t_asm("""
 STRING 1 0 100 "foobar"
 EOF 0 0 0
