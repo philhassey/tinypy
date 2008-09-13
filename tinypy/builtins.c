@@ -7,7 +7,11 @@ tp_obj tp_print(TP) {
     tp_obj e;
     TP_LOOP(e)
         if (n) { printf(" "); }
-        printf("%s",TP_CSTR(e));
+        if (e.type == TP_STRING) {
+            int i; for (i=0;i<e.string.len;i++) { putchar(e.string.val[i]); }
+        } else {
+            printf("%s",TP_CSTR(e));
+        }
         n += 1;
     TP_END;
     printf("\n");

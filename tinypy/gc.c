@@ -96,6 +96,8 @@ void tp_collect(TP) {
         if (r.type == TP_STRING) {
             /*this can't be moved into tp_delete, because tp_delete is
                also used by tp_track_s to delete redundant strings*/
+/*            r.string.len = r.string.info->len;
+            r.string.val = r.string.info->s;*/
             _tp_dict_del(tp,tp->strings,r,"tp_collect");
         }
         tp_delete(tp,r);

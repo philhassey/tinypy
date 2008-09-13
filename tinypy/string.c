@@ -4,6 +4,7 @@
 tp_obj tp_string_t(TP, int n) {
     tp_obj r = tp_string_n(0,n);
     r.string.info = (_tp_string*)tp_malloc(tp, sizeof(_tp_string)+n);
+    r.string.info->len = n;
     r.string.val = r.string.info->s;
     return r;
 }
@@ -90,6 +91,14 @@ tp_obj tp_string_slice(TP,tp_obj s, int a, int b) {
     char *m = r.string.info->s;
     memcpy(m,s.string.val+a,b-a);
     return tp_track(tp,r);
+    
+/*    int l = s.string.len;
+    a = _tp_max(0,(a<0?l+a:a)); b = _tp_min(l,(b<0?l+b:b));
+    
+    tp_obj r = s;
+    r.string.val += a;
+    r.string.len = b-a;
+    return r;*/
 }
 
 tp_obj tp_split(TP) {

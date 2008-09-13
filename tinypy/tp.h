@@ -116,6 +116,7 @@ typedef union tp_obj {
 
 typedef struct _tp_string {
     int gci;
+    int len;
     char s[1];
 } _tp_string;
 typedef struct _tp_list {
@@ -232,7 +233,6 @@ typedef struct _tp_data {
 
 #define tp_True tp_number(1)
 #define tp_False tp_number(0)
-#define TP_CSTR(v) ((tp_str(tp,(v))).string.val)
 
 extern tp_obj tp_None;
 
@@ -269,11 +269,22 @@ tp_obj tp_call(TP, tp_obj fnc, tp_obj params);
     _tp_raise(tp,tp_printf(tp,fmt,__VA_ARGS__)); \
     return r; \
 }
+/*#define TP_CSTR(v) ((tp_str(tp,(v))).string.val)*/
+tp_inline static const char *TP_CSTR_(TP,tp_obj v) {
+    if (v.string.val[v.string.len] != 0) {
+        tp_raise(0,"TP_CSTR_(%s)",v.string.val);
+    }
+    return v.string.val;
+}
+#define TP_CSTR(v) TP_CSTR_(tp,tp_str(tp,(v)))
+
 #define TP_OBJ() (tp_get(tp,tp->params,tp_None))
 tp_inline static tp_obj tp_type(TP,int t,tp_obj v) {
     if (v.type != t) { tp_raise(tp_None,"_tp_type(%d,%s)",t,TP_CSTR(v)); }
     return v;
 }
+
+
 
 #define TP_NO_LIMIT 0
 #define TP_TYPE(t) tp_type(tp,t,TP_OBJ())

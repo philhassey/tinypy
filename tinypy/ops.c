@@ -196,10 +196,11 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
         if (type == TP_LIST) {
             return tp_list_n(tp,b-a,&self.list.val->items[a]);
         } else if (type == TP_STRING) {
-            tp_obj r = tp_string_t(tp,b-a);
+/*            tp_obj r = tp_string_t(tp,b-a);
             char *ptr = r.string.info->s;
             memcpy(ptr,self.string.val+a,b-a); ptr[b-a]=0;
-            return tp_track(tp,r);
+            return tp_track(tp,r);*/
+            return tp_string_slice(tp,self,a,b);
         }
     }
 
