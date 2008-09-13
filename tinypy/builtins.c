@@ -17,7 +17,9 @@ tp_obj tp_print(TP) {
 tp_obj tp_bind(TP) {
     tp_obj r = TP_TYPE(TP_FNC);
     tp_obj self = TP_OBJ();
-    return tp_fnc_new(tp,r.fnc.ftype|2,r.fnc.val,self,r.fnc.info->globals);
+    return tp_fnc_new(tp,
+        r.fnc.ftype|2,r.fnc.cfnc,r.fnc.info->code,
+        self,r.fnc.info->globals);
 }
 
 tp_obj tp_min(TP) {
@@ -193,7 +195,9 @@ int _tp_lookup_(TP,tp_obj self, tp_obj k, tp_obj *meta, int depth) {
     depth--; if (!depth) { tp_raise(0,tp_string("(tp_lookup) RuntimeError: maximum lookup depth exceeded")); }
     if (self.dict.dtype && self.dict.val->meta.type == TP_DICT && _tp_lookup_(tp,self.dict.val->meta,k,meta,depth)) {
         if (self.dict.dtype == 2 && meta->type == TP_FNC) {
-            *meta = tp_fnc_new(tp,meta->fnc.ftype|2,meta->fnc.val,self,meta->fnc.info->globals);
+            *meta = tp_fnc_new(tp,meta->fnc.ftype|2,
+                meta->fnc.cfnc,meta->fnc.info->code,
+                self,meta->fnc.info->globals);
         }
         return 1;
     }

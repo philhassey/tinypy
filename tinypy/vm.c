@@ -58,11 +58,11 @@ void tp_deinit(TP) {
 }
 
 /* tp_frame_*/
-void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
+void tp_frame(TP,tp_obj globals,tp_obj code,tp_obj *ret_dest) {
     tp_frame_ f;
     f.globals = globals;
-    f.codes = codes;
-    f.cur = f.codes;
+    f.code = code;
+    f.cur = (tp_code*)f.code.string.val;
     f.jmp = 0;
 /*     fprintf(stderr,"tp->cur: %d\n",tp->cur);*/
     f.regs = (tp->cur <= 0?tp->regs:tp->frames[tp->cur].regs+tp->frames[tp->cur].cregs);
@@ -81,6 +81,7 @@ void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
 }
 
 void _tp_raise(TP,tp_obj e) {
+    /*char *x = 0; x[0]=0;*/
     if (!tp || !tp->jmp) {
 #ifndef CPYTHON_MOD
         printf("\nException:\n"); tp_echo(tp,e); printf("\n");
@@ -168,7 +169,7 @@ tp_obj tp_call(TP,tp_obj self, tp_obj params) {
     }
     if (self.type == TP_FNC) {
         tp_obj dest = tp_None;
-        tp_frame(tp,self.fnc.info->globals,(tp_code*)self.fnc.val,&dest);
+        tp_frame(tp,self.fnc.info->globals,self.fnc.info->code,&dest);
         if ((self.fnc.ftype&2)) {
             tp->frames[tp->cur].regs[0] = params;
             _tp_list_insert(tp,params.list.val,0,self.fnc.info->self);
@@ -285,7 +286,8 @@ int tp_step(TP) {
             break;
         case TP_IGSET: tp_set(tp,f->globals,RA,RB); break;
         case TP_IDEF:
-            RA = tp_def(tp,(*(cur+1)).string.val,f->globals);
+/*            RA = tp_def(tp,(*(cur+1)).string.val,f->globals);*/
+            RA = tp_def(tp,tp_string_n((*(cur+1)).string.val,SVBC),f->globals);
             cur += SVBC; continue;
             break;
         case TP_IRETURN: tp_return(tp,RA); SR(0); break;
@@ -334,28 +336,23 @@ tp_obj tp_ez_call(TP, const char *mod, const char *fnc, tp_obj params) {
     return tp_call(tp,tmp,params);
 }
 
-tp_obj _tp_import(TP, tp_obj fname, tp_obj name, void *codes) {
-    tp_obj code = tp_None;
+tp_obj _tp_import(TP, tp_obj fname, tp_obj name, tp_obj code) {
     tp_obj g;
 
-    if (!((fname.type != TP_NONE && _tp_str_index(fname,tp_string(".tpc"))!=-1) || codes)) {
+    if (!((fname.type != TP_NONE && _tp_str_index(fname,tp_string(".tpc"))!=-1) || code.type != TP_NONE)) {
         return tp_ez_call(tp,"py2bc","import_fname",tp_params_v(tp,2,fname,name));
     }
 
-    if (!codes) {
+    if (code.type == TP_NONE) {
         tp_params_v(tp,1,fname);
         code = tp_load(tp);
-        /* We cast away the constness. */
-        codes = (void *)code.string.val;
-    } else {
-        code = tp_data(tp,0,codes);
     }
 
     g = tp_dict(tp);
     tp_set(tp,g,tp_string("__name__"),name);
     tp_set(tp,g,tp_string("__code__"),code);
     tp_set(tp,g,tp_string("__dict__"),g);
-    tp_frame(tp,g,(tp_code*)codes,0);
+    tp_frame(tp,g,code,0);
     tp_set(tp,tp->modules,name,g);
 
     if (!tp->jmp) { tp_run(tp,tp->cur); }
@@ -371,13 +368,15 @@ tp_obj _tp_import(TP, tp_obj fname, tp_obj name, void *codes) {
  * fname - The filename of a file containing the module's code.
  * name - The name of the module.
  * codes - The module's code.  If this is given, fname is ignored.
+ * len - The length of the bytecode.
  *
  * Returns:
  * The module object.
  */
-tp_obj tp_import(TP, const char * fname, const char * name, void *codes) {
+tp_obj tp_import(TP, const char * fname, const char * name, void *codes, int len) {
     tp_obj f = fname?tp_string(fname):tp_None;
-    return _tp_import(tp,f,tp_string(name),codes);
+    tp_obj bc = codes?tp_string_n((const char*)codes,len):tp_None;
+    return _tp_import(tp,f,tp_string(name),bc);
 }
 
 
@@ -385,7 +384,7 @@ tp_obj tp_import(TP, const char * fname, const char * name, void *codes) {
 tp_obj tp_exec_(TP) {
     tp_obj code = TP_OBJ();
     tp_obj globals = TP_OBJ();
-    tp_frame(tp,globals,(tp_code*)code.string.val,0);
+    tp_frame(tp,globals,code,0);
     return tp_None;
 }
 
@@ -398,7 +397,7 @@ tp_obj tp_import_(TP) {
         return tp_get(tp,tp->modules,mod);
     }
     
-    r = _tp_import(tp,tp_add(tp,mod,tp_string(".tpc")),mod,0);
+    r = _tp_import(tp,tp_add(tp,mod,tp_string(".tpc")),mod,tp_None);
     return r;
 }
 
@@ -435,8 +434,8 @@ void tp_args(TP,int argc, char *argv[]) {
     tp_set(tp,tp->builtins,tp_string("ARGV"),self);
 }
 
-tp_obj tp_main(TP,char *fname, void *code) {
-    return tp_import(tp,fname,"__main__",code);
+tp_obj tp_main(TP,char *fname, void *code, int len) {
+    return tp_import(tp,fname,"__main__",code, len);
 }
 
 /* Function: tp_compile
@@ -452,7 +451,7 @@ tp_obj tp_compile(TP, tp_obj text, tp_obj fname) {
  */
 tp_obj tp_exec(TP, tp_obj code, tp_obj globals) {
     tp_obj r=tp_None;
-    tp_frame(tp,globals,(tp_code*)code.string.val,&r);
+    tp_frame(tp,globals,code,&r);
     tp_run(tp,tp->cur);
     return r;
 }

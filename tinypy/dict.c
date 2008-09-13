@@ -109,7 +109,7 @@ void _tp_dict_set(TP,_tp_dict *self,tp_obj k, tp_obj v) {
 tp_obj _tp_dict_get(TP,_tp_dict *self,tp_obj k, const char *error) {
     int n = _tp_dict_find(tp,self,k);
     if (n < 0) {
-        tp_raise(tp_None,tp_string("(_tp_dict_get) KeyError"));
+        tp_raise(tp_None,tp_add(tp,tp_string("(_tp_dict_get) KeyError: "),tp_str(tp,k)));
     }
     return self->items[n].val;
 }
@@ -117,7 +117,7 @@ tp_obj _tp_dict_get(TP,_tp_dict *self,tp_obj k, const char *error) {
 void _tp_dict_del(TP,_tp_dict *self,tp_obj k, const char *error) {
     int n = _tp_dict_find(tp,self,k);
     if (n < 0) {
-        tp_raise(,tp_string("(_tp_dict_del) KeyError"));
+        tp_raise(,tp_add(tp,tp_string("(_tp_dict_del) KeyError: "),tp_str(tp,k)));
     }
     self->items[n].used = -1;
     self->len -= 1;

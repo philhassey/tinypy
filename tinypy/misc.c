@@ -9,22 +9,24 @@ tp_obj _tp_tcall(TP,tp_obj fnc) {
     if (fnc.fnc.ftype&2) {
         _tp_list_insert(tp,tp->params.list.val,0,fnc.fnc.info->self);
     }
-    return _tp_dcall(tp,(tp_obj (*)(tp_vm *))fnc.fnc.val);
+    return _tp_dcall(tp,(tp_obj (*)(tp_vm *))fnc.fnc.cfnc);
 }
 
-tp_obj tp_fnc_new(TP,int t, void *v, tp_obj s, tp_obj g) {
+tp_obj tp_fnc_new(TP,int t, void *v, tp_obj c,tp_obj s, tp_obj g) {
     tp_obj r = {TP_FNC};
     _tp_fnc *info = (_tp_fnc*)tp_malloc(tp, sizeof(_tp_fnc));
+    info->code = c;
     info->self = s;
     info->globals = g;
     r.fnc.ftype = t;
     r.fnc.info = info;
-    r.fnc.val = v;
+    r.fnc.cfnc = v;
     return tp_track(tp,r);
 }
 
-tp_obj tp_def(TP,void *v, tp_obj g) {
-    return tp_fnc_new(tp,1,v,tp_None,g);
+tp_obj tp_def(TP,tp_obj code, tp_obj g) {
+    tp_obj r = tp_fnc_new(tp,1,0,code,tp_None,g);
+    return r;
 }
 
 /* Function: tp_fnc
@@ -34,11 +36,11 @@ tp_obj tp_def(TP,void *v, tp_obj g) {
  * the script, calls the provided C function.
  */
 tp_obj tp_fnc(TP,tp_obj v(TP)) {
-    return tp_fnc_new(tp,0,v,tp_None,tp_None);
+    return tp_fnc_new(tp,0,v,tp_None,tp_None,tp_None);
 }
 
 tp_obj tp_method(TP,tp_obj self,tp_obj v(TP)) {
-    return tp_fnc_new(tp,2,v,self,tp_None);
+    return tp_fnc_new(tp,2,v,tp_None,self,tp_None);
 }
 
 /* Function: tp_data

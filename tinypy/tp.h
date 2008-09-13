@@ -72,7 +72,7 @@ typedef struct tp_fnc_ {
     int type;
     struct _tp_fnc *info;
     int ftype;
-    void *val;
+    void *cfnc;
 } tp_fnc_;
 typedef struct tp_data_ {
     int type;
@@ -145,6 +145,7 @@ typedef struct _tp_fnc {
     int gci;
     tp_obj self;
     tp_obj globals;
+    tp_obj code;
 } _tp_fnc;
 
 
@@ -156,7 +157,8 @@ typedef union tp_code {
 } tp_code;
 
 typedef struct tp_frame_ {
-    tp_code *codes;
+/*    tp_code *codes; */
+    tp_obj code;
     tp_code *cur;
     tp_code *jmp;
     tp_obj *regs;
@@ -256,6 +258,7 @@ tp_obj tp_printf(TP,char const *fmt,...);
 tp_obj tp_track(TP,tp_obj);
 void tp_grey(TP,tp_obj);
 tp_obj tp_call(TP, tp_obj fnc, tp_obj params);
+tp_obj tp_add(TP,tp_obj a, tp_obj b) ;
 
 /* __func__ __VA_ARGS__ __FILE__ __LINE__ */
 
