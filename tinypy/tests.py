@@ -1106,12 +1106,15 @@ def unformat(x):
                 r.append(i)
     return " ".join(r)
 
-def t_asm(ass, ex, exact=True):
+def t_asm(ass, ex, exact=True,check_dis=True):
     ass = ass.strip()
     bc = asm.assemble(ass)
     dis = disasm.disassemble(bc)
     dis = unformat(dis)
-    assert(dis == ass)
+    if check_dis and dis != ass:
+        print (ass)
+        print (dis)
+        assert(dis == ass)
     fname = "tmp.tpc"
     system_rm(fname)
     system_rm(TMP)
@@ -1138,6 +1141,7 @@ if is_boot == True and __name__ == '__main__':
     t_asm("""
 NUMBER 0 0 0 42
 DEBUG 0 0 0
+EOF 0 0 0
 """, "DEBUG: 0 42")
 
     t_asm("""
@@ -1155,6 +1159,7 @@ STRING 3 0 1 "a"
 GGET 2 3 0
 PARAMS 0 2 1
 CALL 0 1 0
+EOF 0 0 0
 """, "42")
 
     t_asm("""
@@ -1173,6 +1178,7 @@ GGET 3 4 0
 ADD 2 2 3
 PARAMS 0 2 1
 CALL 0 1 0
+EOF 0 0 0
 """, "foobar")
 
     t_asm("""
@@ -1194,6 +1200,7 @@ NUMBER 1 0 0 2
 JUMP 0 0 2
 ADD 0 0 1
 DEBUG 0 0 0
+EOF 0 0 0
 """, "DEBUG: 0 1");
 
     t_asm("""
@@ -1201,6 +1208,7 @@ STRING 0 0 3 "foo"
 NUMBER 1 0 0 3
 MUL 0 0 1
 DEBUG 0 0 0
+EOF 0 0 0
 """, "DEBUG: 0 foofoofoo");
 
     t_asm("""
@@ -1209,6 +1217,7 @@ NUMBER 0 0 0 42
 LIST 0 0 2
 GET 0 0 1
 DEBUG 0 0 0
+EOF 0 0 0
 """, "DEBUG: 0 42");
 
     t_asm("""
@@ -1218,6 +1227,7 @@ NUMBER 2 0 0 1
 LIST 0 0 3
 LEN 0 0 0
 DEBUG 0 0 0
+EOF 0 0 0
 """, "DEBUG: 0 3");
 
     t_asm("""
@@ -1243,22 +1253,23 @@ STRING 1 0 3 "foo"
 NAME 1 0 0
 PASS 0 0 0
 EOF 0 0 0
-""", "out of bounds", False)
+""", "SandboxError", False)
 
     #test that negative out of bounds jumps are sanitised
     t_asm("""
 JUMP 0 127 255
 EOF 0 0 0
-""", "out of bounds", False)
+""", "SandboxError", False)
     
     #test that positive out of bounds jumps are sanitised
     t_asm("""
 JUMP 0 128 0
 EOF 0 0 0
-""", "out of bounds", False)
+""", "SandboxError", False)
 
     #test that strings with boundaries beyond the end of the bytecode are properly sanitised
     t_asm("""
 STRING 1 0 100 "foobar"
 EOF 0 0 0
-""", "out of bounds", False)
+""", "SandboxError", False,False)
+
