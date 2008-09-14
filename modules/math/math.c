@@ -23,8 +23,8 @@
         errno = 0;                                  \
         r = cfunc(x);                               \
         if (errno == EDOM || errno == ERANGE) {     \
-	    tp_raise(tp_None, tp_printf(tp, "%s(x): x=%f "		\
-					"out of range", __func__, x));	\
+            tp_raise(tp_None, tp_printf(tp, "%s(x): x=%f "		\
+                                        "out of range", __func__, x));	\
         }                                           \
                                                     \
         return (tp_number(r));                      \
@@ -46,8 +46,8 @@
         errno = 0;                                  \
         r = cfunc(x, y);                            \
         if (errno == EDOM || errno == ERANGE) {     \
-	    tp_raise(tp_None, tp_printf(tp, "%s(x, y): x=%f,y=%f "	\
-					"out of range", __func__, x, y)); \
+            tp_raise(tp_None, tp_printf(tp, "%s(x, y): x=%f,y=%f "	\
+                                        "out of range", __func__, x, y)); \
         }                                           \
                                                     \
         return (tp_number(r));                      \
@@ -186,7 +186,7 @@ static tp_obj math_frexp(TP) {
     r = frexp(x, &y);
     if (errno == EDOM || errno == ERANGE) {
         tp_raise(tp_None, tp_printf(tp, "%s(x): x=%f, "
-				    "out of range", __func__, x));
+                                    "out of range", __func__, x));
     }
 
     _tp_list_append(tp, rList.list.val, tp_number(r));
@@ -252,7 +252,7 @@ static tp_obj math_log(TP) {
 
 excep:
     tp_raise(tp_None, tp_printf(tp, "%s(x, y): x=%f,y=%f "
-				"out of range", __func__, x, y));
+                                "out of range", __func__, x, y));
 }
 
 /*
@@ -279,7 +279,7 @@ static tp_obj math_modf(TP) {
     r = modf(x, &y);
     if (errno == EDOM || errno == ERANGE) {
         tp_raise(tp_None, tp_printf(tp, "%s(x): x=%f, "
-				    "out of range", __func__, x));
+                                    "out of range", __func__, x));
     }
 
     _tp_list_append(tp, rList.list.val, tp_number(r));
@@ -304,7 +304,7 @@ static tp_obj math_pow(TP) {
     r = pow(x, y);
     if (errno == EDOM || errno == ERANGE) {
         tp_raise(tp_None, tp_printf(tp, "%s(x, y): x=%f,y=%f "
-				    "out of range", __func__, x, y));
+                                    "out of range", __func__, x, y));
     }
 
     return (tp_number(r));
