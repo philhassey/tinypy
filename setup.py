@@ -331,7 +331,7 @@ def build_mymain():
     
 def test_mods(cmd):
     for m in MODULES:
-        tests = os.path.join('modules',m,'tests.py')
+        tests = os.path.join('..','modules',m,'tests.py')
         if not os.path.exists(tests): continue
         cmd = cmd.replace('$TESTS',tests)
         do_cmd(cmd)
