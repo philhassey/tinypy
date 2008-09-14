@@ -66,6 +66,11 @@ void tp_frame(TP,tp_obj globals,tp_obj code,tp_obj *ret_dest) {
     f.jmp = 0;
 /*     fprintf(stderr,"tp->cur: %d\n",tp->cur);*/
     f.regs = (tp->cur <= 0?tp->regs:tp->frames[tp->cur].regs+tp->frames[tp->cur].cregs);
+    
+    f.regs[0] = f.globals;
+    f.regs[1] = f.code;
+    f.regs += TP_REGS_EXTRA;
+    
     f.ret_dest = ret_dest;
     f.lineno = 0;
     f.line = tp_string("");
@@ -73,7 +78,7 @@ void tp_frame(TP,tp_obj globals,tp_obj code,tp_obj *ret_dest) {
     f.fname = tp_string("?");
     f.cregs = 0;
 /*     return f;*/
-    if (f.regs+256 >= tp->regs+TP_REGS || tp->cur >= TP_FRAMES-1) {
+    if (f.regs+(256+TP_REGS_EXTRA) >= tp->regs+TP_REGS || tp->cur >= TP_FRAMES-1) {
         tp_raise(,tp_string("(tp_frame) RuntimeError: stack overflow"));
     }
     tp->cur += 1;
@@ -189,7 +194,7 @@ void tp_return(TP, tp_obj v) {
     if (dest) { *dest = v; tp_grey(tp,v); }
 /*     memset(tp->frames[tp->cur].regs,0,TP_REGS_PER_FRAME*sizeof(tp_obj));
        fprintf(stderr,"regs:%d\n",(tp->frames[tp->cur].cregs+1));*/
-    memset(tp->frames[tp->cur].regs,0,tp->frames[tp->cur].cregs*sizeof(tp_obj));
+    memset(tp->frames[tp->cur].regs-TP_REGS_EXTRA,0,(TP_REGS_EXTRA+tp->frames[tp->cur].cregs)*sizeof(tp_obj));
     tp->cur -= 1;
 }
 
@@ -277,10 +282,13 @@ int tp_step(TP) {
             RA = tp_number(*(tp_num*)(*++cur).string.val);
             cur += sizeof(tp_num)/4;
             continue;
-        case TP_ISTRING:
+        case TP_ISTRING: {
             tp_bounds(tp,cur,(UVBC/4)+1);
-            RA = tp_string_n((*(cur+1)).string.val,UVBC);
+            /* RA = tp_string_n((*(cur+1)).string.val,UVBC); */
+            int a = (*(cur+1)).string.val-f->code.string.val;
+            RA = tp_string_sub(tp,f->code,a,a+UVBC),
             cur += (UVBC/4)+1;
+            }
             break;
         case TP_IDICT: RA = tp_dict_n(tp,VC/2,&RB); break;
         case TP_ILIST: RA = tp_list_n(tp,VC,&RB); break;
@@ -298,12 +306,18 @@ int tp_step(TP) {
             }
             break;
         case TP_IGSET: tp_set(tp,f->globals,RA,RB); break;
-        case TP_IDEF:
+        case TP_IDEF: {
 /*            RA = tp_def(tp,(*(cur+1)).string.val,f->globals);*/
             tp_bounds(tp,cur,SVBC);
-            RA = tp_def(tp,tp_string_n((*(cur+1)).string.val,(SVBC-1)*4),f->globals);
+            int a = (*(cur+1)).string.val-f->code.string.val;
+            RA = tp_def(tp,
+                /*tp_string_n((*(cur+1)).string.val,(SVBC-1)*4),*/
+                tp_string_sub(tp,f->code,a,a+(SVBC-1)*4),
+                f->globals);
             cur += SVBC; continue;
+            }
             break;
+            
         case TP_IRETURN: tp_return(tp,RA); SR(0); break;
         case TP_IRAISE: _tp_raise(tp,RA); SR(0); break;
         case TP_IDEBUG:
@@ -312,7 +326,9 @@ int tp_step(TP) {
         case TP_INONE: RA = tp_None; break;
         case TP_ILINE:
             tp_bounds(tp,cur,VA);
-            f->line = tp_string_n((*(cur+1)).string.val,VA*4-1);
+            int a = (*(cur+1)).string.val-f->code.string.val;
+/*            f->line = tp_string_n((*(cur+1)).string.val,VA*4-1);*/
+            f->line = tp_string_sub(tp,f->code,a,a+VA*4-1);
 /*             fprintf(stderr,"%7d: %s\n",UVBC,f->line.string.val);*/
             cur += VA; f->lineno = UVBC;
             break;

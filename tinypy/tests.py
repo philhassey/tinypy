@@ -954,6 +954,14 @@ bar = "K"
 print(3 * foo, bar * 3)
 """, "OOO KKK")
 
+    #test issue #27: that the __main__ module doesn't get GC'd
+    t_render("""
+MODULES["__main__"] = None
+for n in range(0,50000):
+    x = [n]
+print("OK")
+""","OK")
+
 ################################################################################
 
 def t_boot(ss,ex,exact=True):
