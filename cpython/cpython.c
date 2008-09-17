@@ -88,7 +88,7 @@ Tinypy_exec(TinypyObject *self, PyObject *args, PyObject *kwds)
     }
     if(setjmp(tp->nextexpr)) {
         --(tp->cur);
-        PyErr_SetString(TinypyError, TP_CSTR(tp->ex));
+        PyErr_SetObject(TinypyError, Tinypy_ConvertObj(tp->ex));
         return NULL;
     }
     tp->clocks = clock();

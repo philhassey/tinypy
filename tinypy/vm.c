@@ -490,7 +490,7 @@ tp_obj tp_exec(TP, tp_obj code, tp_obj globals) {
     return r;
 }
 
-tp_obj tp_eval(TP, char *text, tp_obj globals) {
+tp_obj tp_eval(TP, const char *text, tp_obj globals) {
     tp_obj code = tp_compile(tp,tp_string(text),tp_string("<eval>"));
     return tp_exec(tp,code,globals);
 }
