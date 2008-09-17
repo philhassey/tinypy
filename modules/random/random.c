@@ -221,7 +221,7 @@ static tp_obj random_seed(TP)
         init_genrand(&_gRandom, seed);
         _gRandom.has_seed = 1;
     } else {
-        tp_raise(tp_None, "%s", "invalid argument for seed()");
+        tp_raise(tp_None,tp_printf(tp, "%s", "invalid argument for seed()"));
     }
     
     return (tp_None);
@@ -252,8 +252,8 @@ static tp_obj random_setstate(TP)
 
     len = tp_len(tp, state_list);
     if (len.number.val != N+1) {
-        tp_raise(tp_None, "%s: state vector's size invalid(should be %d)", 
-                __func__, N+1);
+        tp_raise(tp_None,tp_printf(tp, "%s: state vector's size invalid(should be %d)", 
+                __func__, N+1));
     }
 
     for (i = 0; i < N; i++) {
@@ -302,7 +302,7 @@ static tp_obj random_jumpahead(TP)
     for (i = N-1; i > 1; i--) {
         j = n % i;
         if (j == -1L) {
-            tp_raise(tp_None, "error: %s: j = %ld", __func__, j);
+            tp_raise(tp_None,tp_printf(tp, "error: %s: j = %ld", __func__, j));
         }
         tmp   = mt[i];
         mt[i] = mt[j];
@@ -400,7 +400,7 @@ static tp_obj random_seed(TP)
     } else if (arg.type == TP_NUMBER) {
         a = (long)arg.number.val;
     } else {
-        tp_raise(tp_None, "%s", "invalid argument for seed()");
+        tp_raise(tp_None,tp_printf(tp, "%s", "invalid argument for seed()"));
     }
     
     a = divmod(a, 30268, &x);
@@ -461,7 +461,7 @@ static tp_obj random_random(TP)
     errno = 0;
     r = fmod(((double)x/30269.0+(double)y/30307.0+(double)z/30323.0), 1.0);
     if (errno == EDOM)
-        tp_raise(tp_None, "%s", "fmod(): denominator can't be zero");
+        tp_raise(tp_None,tp_printf(tp, "%s", "fmod(): denominator can't be zero"));
 
     return tp_number(r);
 }
@@ -504,7 +504,7 @@ static tp_obj random_jumpahead(TP)
     long x, y, z;
 
     if (n < 0)
-        tp_raise(tp_None, "%s: n = %d invalid, should >= 0", __func__, n);
+        tp_raise(tp_None,tp_printf(tp, "%s: n = %d invalid, should >= 0", __func__, n));
 
     x = _gWhRandom.seed.x;
     y = _gWhRandom.seed.y;
@@ -543,7 +543,7 @@ static tp_obj random_seed(TP)
         srandom((unsigned long)arg.number.val);
         has_seed = 1;
     } else {
-        tp_raise(tp_None, "%s", "invalid argument for seed()");
+        tp_raise(tp_None,tp_printf(tp, "%s", "invalid argument for seed()"));
     }
     
     return (tp_None);
@@ -622,7 +622,7 @@ tp_obj random_uniform(TP)
     tp_obj rvo;         /* random variable object */
 
     if (a >= b)
-        tp_raise(tp_None, "%s: a(%f) must be less than b(%f)", a, b);
+        tp_raise(tp_None,tp_printf(tp, "%s: a(%f) must be less than b(%f)", a, b));
 
     rvo = random_random(tp);
     r = a + (b - a) * rvo.number.val;
@@ -801,8 +801,8 @@ tp_obj random_gammavariate(TP)
      * of alpha > -1.0
      */
     if ((alpha <= 0.0) || (beta <= 0.0))
-        tp_raise(tp_None, "%s: alpha(%f) and beta(%f) must be > 0.0",
-                __func__, alpha, beta);
+        tp_raise(tp_None,tp_printf(tp, "%s: alpha(%f) and beta(%f) must be > 0.0",
+                __func__, alpha, beta));
 
     if (alpha > 1.0) {
 
@@ -1003,9 +1003,9 @@ tp_obj random_randrange(TP)
         istop = (int)stop.number.val;
         iwidth = istop - istart;
         if (iwidth < 0)
-            tp_raise(tp_None, "%s", "stop must be > start");
+            tp_raise(tp_None,tp_printf(tp, "%s", "stop must be > start"));
         if (istep <= 0)
-            tp_raise(tp_None, "%s", "step must be integer larger than 0");
+            tp_raise(tp_None,tp_printf(tp, "%s", "step must be integer larger than 0"));
             
         if (istep == 1) {
             res = (int)(istart + (int)(rvo.number.val * iwidth));
@@ -1016,7 +1016,7 @@ tp_obj random_randrange(TP)
             return (tp_number(res));
         }
     } else {
-        tp_raise(tp_None, "%s", "wrong type of stop");
+        tp_raise(tp_None,tp_printf(tp, "%s", "wrong type of stop"));
     }
 }
 
@@ -1048,7 +1048,7 @@ tp_obj random_choice(TP)
     
     len = tp_len(tp, seq);
     if (len.number.val <= 0)
-        tp_raise(tp_None, "%s", "seq mustn't be empty");
+        tp_raise(tp_None,tp_printf(tp, "%s", "seq mustn't be empty"));
     
     rvo = random_random(tp);
     i = (int)(len.number.val * rvo.number.val);
