@@ -8,12 +8,12 @@ import disasm
 ################################################################################
 RM = 'rm -f '
 VM = './vm '
-TINYPY = './tinypy '
+TINYPY = '../build/tinypy '
 TMP = 'tmp.txt'
 if '-mingw32' in ARGV or "-win" in ARGV:
     RM = 'del '
     VM = 'vm '
-    TINYPY = 'tinypy '
+    TINYPY = '..\\build\\tinypy '
     TMP = 'tmp.txt'
     #TMP = 'stdout.txt'
 def system_rm(fname):
@@ -35,9 +35,8 @@ def t_tokenize(s,exp=''):
     import tokenize
     result = tokenize.tokenize(s)
     res = ' '.join([t_show(t) for t in result])
-    if res != exp:
-        print(s); print(exp); print(res)
-        assert(res == exp)
+    #print(s); print(exp); print(res)
+    assert(res == exp)
 
 if __name__ == '__main__':
     t_tokenize("234",'234')
@@ -236,6 +235,7 @@ def t_render(ss,ex,exact=True):
     cmd = VM + fname + " > tmp.txt"
     system(cmd)
     res = load(TMP).strip()
+    
     #print(ss,ex,res)
     if exact:
         if res != ex: showerror(cmd, ss, ex, res)
@@ -550,12 +550,12 @@ print(x.a+y.a)
 x = {}
 y = x['x']
 """
-,'KeyError',0)
+,'KeyError', False)
     t_render("""
 x = []
 y = x[1]
 """
-,'KeyError',0)
+,'KeyError', False)
     t_render("""print("O"+"K")""","OK")
     t_render("""print("-".join(["O","K"]))""","O-K")
     t_render("""print("OK-OK".split("-")[1])""","OK")
@@ -698,7 +698,7 @@ test()
     t_render("""x=(1,3);print({x:'OK'}[x])""","OK")
     t_render("""x=(1,3);y=(1,3);print({x:'OK'}[y])""","OK")
     t_render("""print({(1,3):'OK'}[(1,3)])""","OK")
-    t_render("def test(): test()\ntest()","Exception",0)
+    t_render("def test(): test()\ntest()","Exception", False)
     t_render("x = []; x.append(x); print(x<x)","0");
     t_render("x = []; x.append(x); print({x:'OK'}[x])","OK")
     #t_render("print(float(str(4294967296))==float('4294967296'))","1")
@@ -1026,6 +1026,59 @@ for i in x:
 print(y)
 ""","OK")
 
+    #test that sandbox() raises an exception when the time limit is passed
+    t_render("""
+sandbox(1, False)
+while True: 
+    pass
+""", "SandboxError", False)
+
+    #test that calling sandbox() removes the sandbox builtin
+    t_render("""
+sandbox(500, False)
+try:
+    sandbox(200)
+except:
+    print("OK")
+""", "OK")
+
+    #test that sandbox() raises an exception when the memory limit is passed
+    t_render("""
+sandbox(False, 1)
+a = 42
+""", "SandboxError", False)
+
+    #test that circular inheritance doesn't cause an infinite lookup chain
+    t_render("""
+class A:
+    pass
+
+class B:
+    pass
+
+setmeta(A, B)
+setmeta(B, A)
+
+foo = A()
+print("OK")
+""", "tp_lookup",False)
+
+
+    #tests issue #20: test that string multiplication is commutative
+    t_render("""
+foo = "O"
+bar = "K"
+print(3 * foo, bar * 3)
+""", "OOO KKK")
+
+    #test issue #27: that the __main__ module doesn't get GC'd
+    t_render("""
+MODULES["__main__"] = None
+for n in range(0,50000):
+    x = [n]
+print("OK")
+""","OK")
+
     #test case for UnboundLocalError - bug #16
     t_unrender("""
 def foo():
@@ -1072,7 +1125,7 @@ def t_api(ss_py,ss,ex):
     system_rm("tmp")
     system_rm(TMP)
     save(fname,ss)
-    system("gcc tmp.c -lm -o tmp")
+    system("gcc tmp.c -Wall -g -lm -o tmp")
     cmd = "./tmp > "+TMP
     system(cmd)
     res = load(TMP).strip()
@@ -1117,6 +1170,7 @@ tp_obj test(TP) {
     tp_obj v = TP_OBJ();
     tp_params_v(tp,1,v);
     tp_print(tp);
+    return tp_None;
 }
 int main(int argc, char *argv[]) {
     tp_vm *tp = tp_init(argc,argv);
@@ -1145,12 +1199,14 @@ tp_obj A_init(TP) {
     tp_obj self = TP_TYPE(TP_DICT);
     tp_obj v = TP_OBJ();
     tp_set(tp,self,tp_string("value"),v);
+    return tp_None;
 }
 tp_obj A_test(TP) {
     tp_obj self = TP_TYPE(TP_DICT);
     tp_obj v = tp_get(tp,self,tp_string("value"));
     tp_params_v(tp,1,v);
     tp_print(tp);
+    return tp_None;
 }
 int main(int argc, char *argv[]) {
     tp_vm *tp = tp_init(argc,argv);
@@ -1182,12 +1238,15 @@ def unformat(x):
                 r.append(i)
     return " ".join(r)
 
-def t_asm(ass, ex, exact=True):
+def t_asm(ass, ex, exact=True,check_dis=True):
     ass = ass.strip()
     bc = asm.assemble(ass)
     dis = disasm.disassemble(bc)
     dis = unformat(dis)
-    assert(dis == ass)
+    if check_dis and dis != ass:
+        print (ass)
+        print (dis)
+        assert(dis == ass)
     fname = "tmp.tpc"
     system_rm(fname)
     system_rm(TMP)
@@ -1195,8 +1254,18 @@ def t_asm(ass, ex, exact=True):
     cmd = VM + fname + " > " + TMP
     system(cmd)
     res = load("tmp.txt").strip()
-    if exact: assert(ex == res)
-    else: assert(ex in res)
+    if exact:
+        if ex != res:
+            print (ass)
+            print (ex)
+            print (res)
+            assert(ex == res)
+    else:
+        if ex not in res:
+            print (ass)
+            print (ex)
+            print (res)
+            assert(ex in res)
     
 if is_boot == True and __name__ == '__main__':
     print("# t_asm")
@@ -1204,6 +1273,7 @@ if is_boot == True and __name__ == '__main__':
     t_asm("""
 NUMBER 0 0 0 42
 DEBUG 0 0 0
+EOF 0 0 0
 """, "DEBUG: 0 42")
 
     t_asm("""
@@ -1221,6 +1291,7 @@ STRING 3 0 1 "a"
 GGET 2 3 0
 PARAMS 0 2 1
 CALL 0 1 0
+EOF 0 0 0
 """, "42")
 
     t_asm("""
@@ -1239,6 +1310,7 @@ GGET 3 4 0
 ADD 2 2 3
 PARAMS 0 2 1
 CALL 0 1 0
+EOF 0 0 0
 """, "foobar")
 
     t_asm("""
@@ -1252,7 +1324,7 @@ GGET 3 1 0
 PARAMS 2 0 1
 CALL 0 3 2
 EOF 0 0 0
-""", "foo")
+""", "foo");
 
     t_asm("""
 NUMBER 0 0 0 1
@@ -1260,14 +1332,16 @@ NUMBER 1 0 0 2
 JUMP 0 0 2
 ADD 0 0 1
 DEBUG 0 0 0
-""", "DEBUG: 0 1")
+EOF 0 0 0
+""", "DEBUG: 0 1");
 
     t_asm("""
 STRING 0 0 3 "foo"
 NUMBER 1 0 0 3
 MUL 0 0 1
 DEBUG 0 0 0
-""", "DEBUG: 0 foofoofoo")
+EOF 0 0 0
+""", "DEBUG: 0 foofoofoo");
 
     t_asm("""
 NUMBER 0 0 0 1
@@ -1275,7 +1349,8 @@ NUMBER 0 0 0 42
 LIST 0 0 2
 GET 0 0 1
 DEBUG 0 0 0
-""", "DEBUG: 0 42")
+EOF 0 0 0
+""", "DEBUG: 0 42");
 
     t_asm("""
 NUMBER 0 0 0 1
@@ -1284,7 +1359,8 @@ NUMBER 2 0 0 1
 LIST 0 0 3
 LEN 0 0 0
 DEBUG 0 0 0
-""", "DEBUG: 0 3")
+EOF 0 0 0
+""", "DEBUG: 0 3");
 
     t_asm("""
 DEF 0 0 13
@@ -1299,4 +1375,33 @@ EOF 0 0 0
 PARAMS 1 0 0
 CALL 1 0 1
 EOF 0 0 0
-""", "foo")
+""", "foo");
+
+    #test that function definitions longer than the bytecode are properly sanitized
+    t_asm("""
+DEF 0 0 100
+REGS 2 0 0
+STRING 1 0 3 "foo"
+NAME 1 0 0
+PASS 0 0 0
+EOF 0 0 0
+""", "SandboxError", False)
+
+    #test that negative out of bounds jumps are sanitized
+    t_asm("""
+JUMP 0 127 255
+EOF 0 0 0
+""", "SandboxError", False)
+    
+    #test that positive out of bounds jumps are sanitized
+    t_asm("""
+JUMP 0 128 0
+EOF 0 0 0
+""", "SandboxError", False)
+
+    #test that strings with boundaries beyond the end of the bytecode are properly sanitized
+    t_asm("""
+STRING 1 0 100 "foobar"
+EOF 0 0 0
+""", "SandboxError", False,False)
+

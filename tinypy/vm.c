@@ -1,15 +1,20 @@
 /* File: VM
  * Functionality pertaining to the virtual machine.
  */
-void tp_run(TP,int cur);
 
 tp_vm *_tp_init(void) {
     int i;
-    tp_vm *tp = (tp_vm*)tp_malloc(sizeof(tp_vm));
+    tp_vm *tp = (tp_vm*)calloc(sizeof(tp_vm),1);
+    tp->time_limit = TP_NO_LIMIT;
+    tp->clocks = clock();
+    tp->time_elapsed = 0.0;
+    tp->mem_limit = TP_NO_LIMIT;
+    tp->mem_exceeded = 0;
+    tp->mem_used = sizeof(tp_vm);
     tp->cur = 0;
     tp->jmp = 0;
     tp->ex = tp_None;
-    tp->root = tp_list(0);
+    tp->root = tp_list_nt(tp);
     for (i=0; i<256; i++) { tp->chars[i][0]=i; }
     tp_gc_init(tp);
     tp->_regs = tp_list(tp);
@@ -48,19 +53,24 @@ void tp_deinit(TP) {
     tp_full(tp); tp_full(tp);
     tp_delete(tp,tp->root);
     tp_gc_deinit(tp);
-    tp_free(tp);
+    tp->mem_used -= sizeof(tp_vm); 
+    free(tp);
 }
 
-
 /* tp_frame_*/
-void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
+void tp_frame(TP,tp_obj globals,tp_obj code,tp_obj *ret_dest) {
     tp_frame_ f;
     f.globals = globals;
-    f.codes = codes;
-    f.cur = f.codes;
+    f.code = code;
+    f.cur = (tp_code*)f.code.string.val;
     f.jmp = 0;
 /*     fprintf(stderr,"tp->cur: %d\n",tp->cur);*/
     f.regs = (tp->cur <= 0?tp->regs:tp->frames[tp->cur].regs+tp->frames[tp->cur].cregs);
+    
+    f.regs[0] = f.globals;
+    f.regs[1] = f.code;
+    f.regs += TP_REGS_EXTRA;
+    
     f.ret_dest = ret_dest;
     f.lineno = 0;
     f.line = tp_string("");
@@ -68,16 +78,23 @@ void tp_frame(TP,tp_obj globals,tp_code *codes,tp_obj *ret_dest) {
     f.fname = tp_string("?");
     f.cregs = 0;
 /*     return f;*/
-    if (f.regs+256 >= tp->regs+TP_REGS || tp->cur >= TP_FRAMES-1) { tp_raise(,"tp_frame: stack overflow %d",tp->cur); }
+    if (f.regs+(256+TP_REGS_EXTRA) >= tp->regs+TP_REGS || tp->cur >= TP_FRAMES-1) {
+        tp_raise(,tp_string("(tp_frame) RuntimeError: stack overflow"));
+    }
     tp->cur += 1;
     tp->frames[tp->cur] = f;
 }
 
 void _tp_raise(TP,tp_obj e) {
+    /*char *x = 0; x[0]=0;*/
     if (!tp || !tp->jmp) {
-        printf("\nException:\n%s\n",TP_CSTR(e));
-        abort();
-        return;
+#ifndef CPYTHON_MOD
+        printf("\nException:\n"); tp_echo(tp,e); printf("\n");
+        exit(-1);
+#else
+        tp->ex = e;
+        longjmp(tp->nextexpr,1);
+#endif
     }
     if (e.type != TP_NONE) { tp->ex = e; }
     tp_grey(tp,e);
@@ -89,14 +106,13 @@ void tp_print_stack(TP) {
     printf("\n");
     for (i=0; i<=tp->cur; i++) {
         if (!tp->frames[i].lineno) { continue; }
-        printf("File \"%s\", line %d, in %s\n  %s\n",
-            TP_CSTR(tp->frames[i].fname),tp->frames[i].lineno,
-            TP_CSTR(tp->frames[i].name),TP_CSTR(tp->frames[i].line));
+        printf("File \""); tp_echo(tp,tp->frames[i].fname); printf("\", ");
+        printf("line %d, in ",tp->frames[i].lineno);
+        tp_echo(tp,tp->frames[i].name); printf("\n ");
+        tp_echo(tp,tp->frames[i].line); printf("\n");
     }
-    printf("\nException:\n%s\n",TP_CSTR(tp->ex));
+    printf("\nException:\n"); tp_echo(tp,tp->ex); printf("\n");
 }
-
-
 
 void tp_handle(TP) {
     int i;
@@ -109,8 +125,12 @@ void tp_handle(TP) {
         tp->frames[i].jmp = 0;
         return;
     }
+#ifndef CPYTHON_MOD
     tp_print_stack(tp);
     exit(-1);
+#else
+    longjmp(tp->nextexpr,1);
+#endif
 }
 
 /* Function: tp_call
@@ -154,7 +174,7 @@ tp_obj tp_call(TP,tp_obj self, tp_obj params) {
     }
     if (self.type == TP_FNC) {
         tp_obj dest = tp_None;
-        tp_frame(tp,self.fnc.info->globals,(tp_code*)self.fnc.val,&dest);
+        tp_frame(tp,self.fnc.info->globals,self.fnc.info->code,&dest);
         if ((self.fnc.ftype&2)) {
             tp->frames[tp->cur].regs[0] = params;
             _tp_list_insert(tp,params.list.val,0,self.fnc.info->self);
@@ -165,8 +185,7 @@ tp_obj tp_call(TP,tp_obj self, tp_obj params) {
         return dest;
     }
     tp_params_v(tp,1,self); tp_print(tp);
-    tp_raise(tp_None,"tp_call: %s is not callable",TP_CSTR(self));
-    
+    tp_raise(tp_None,tp_string("(tp_call) TypeError: object is not callable"));
 }
 
 
@@ -175,7 +194,7 @@ void tp_return(TP, tp_obj v) {
     if (dest) { *dest = v; tp_grey(tp,v); }
 /*     memset(tp->frames[tp->cur].regs,0,TP_REGS_PER_FRAME*sizeof(tp_obj));
        fprintf(stderr,"regs:%d\n",(tp->frames[tp->cur].cregs+1));*/
-    memset(tp->frames[tp->cur].regs,0,tp->frames[tp->cur].cregs*sizeof(tp_obj));
+    memset(tp->frames[tp->cur].regs-TP_REGS_EXTRA,0,(TP_REGS_EXTRA+tp->frames[tp->cur].cregs)*sizeof(tp_obj));
     tp->cur -= 1;
 }
 
@@ -207,15 +226,24 @@ enum {
 #define GA tp_grey(tp,RA)
 #define SR(v) f->cur = cur; return(v);
 
+void tp_bounds(TP, tp_code *cur, int n) {
+    char *s = (char *)(cur + n);
+    tp_obj code = tp->frames[tp->cur].code;
+    if (s < code.string.val || s > (code.string.val+code.string.len)) {
+        tp_raise(,tp_string("(tp_bounds) SandboxError: bytecode bounds reached"));
+    }
+}
+
 int tp_step(TP) {
     tp_frame_ *f = &tp->frames[tp->cur];
     tp_obj *regs = f->regs;
     tp_code *cur = f->cur;
     while(1) {
+    tp_bounds(tp,cur,1);
     tp_code e = *cur;
     /*
      fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur-f->codes,tp_strings[e.i],VA,VB,VC);
-       int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,TP_CSTR(regs[i])); }
+       int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,TP_xSTR(regs[i])); }
     */
     switch (e.i) {
         case TP_IEOF: tp_return(tp,tp_None); SR(0); break;
@@ -242,6 +270,7 @@ int tp_step(TP) {
             if (RC.number.val < tp_len(tp,RB).number.val) {
                 RA = tp_iter(tp,RB,RC); GA;
                 RC.number.val += 1;
+                tp_bounds(tp,cur,1);
                 cur += 1;
             }
             break;
@@ -251,12 +280,17 @@ int tp_step(TP) {
         case TP_IDEL: tp_del(tp,RA,RB); break;
         case TP_IMOVE: RA = RB; break;
         case TP_INUMBER:
+            tp_bounds(tp,cur,sizeof(tp_num)/4);
             RA = tp_number(*(tp_num*)(*++cur).string.val);
             cur += sizeof(tp_num)/4;
             continue;
-        case TP_ISTRING:
-            RA = tp_string_n((*(cur+1)).string.val,UVBC);
+        case TP_ISTRING: {
+            tp_bounds(tp,cur,(UVBC/4)+1);
+            /* RA = tp_string_n((*(cur+1)).string.val,UVBC); */
+            int a = (*(cur+1)).string.val-f->code.string.val;
+            RA = tp_string_sub(tp,f->code,a,a+UVBC),
             cur += (UVBC/4)+1;
+            }
             break;
         case TP_IDICT: RA = tp_dict_n(tp,VC/2,&RB); break;
         case TP_ILIST: RA = tp_list_n(tp,VC,&RB); break;
@@ -265,6 +299,7 @@ int tp_step(TP) {
         case TP_IJUMP: cur += SVBC; continue; break;
         case TP_ISETJMP: f->jmp = SVBC?cur+SVBC:0; break;
         case TP_ICALL:
+            tp_bounds(tp,cur,1);
             f->cur = cur + 1;  RA = tp_call(tp,RB,RC); GA;
             return 0; break;
         case TP_IGGET:
@@ -273,10 +308,18 @@ int tp_step(TP) {
             }
             break;
         case TP_IGSET: tp_set(tp,f->globals,RA,RB); break;
-        case TP_IDEF:
-            RA = tp_def(tp,(*(cur+1)).string.val,f->globals);
+        case TP_IDEF: {
+/*            RA = tp_def(tp,(*(cur+1)).string.val,f->globals);*/
+            tp_bounds(tp,cur,SVBC);
+            int a = (*(cur+1)).string.val-f->code.string.val;
+            RA = tp_def(tp,
+                /*tp_string_n((*(cur+1)).string.val,(SVBC-1)*4),*/
+                tp_string_sub(tp,f->code,a,a+(SVBC-1)*4),
+                f->globals);
             cur += SVBC; continue;
+            }
             break;
+            
         case TP_IRETURN: tp_return(tp,RA); SR(0); break;
         case TP_IRAISE: _tp_raise(tp,RA); SR(0); break;
         case TP_IDEBUG:
@@ -284,15 +327,23 @@ int tp_step(TP) {
             break;
         case TP_INONE: RA = tp_None; break;
         case TP_ILINE:
-            f->line = tp_string_n((*(cur+1)).string.val,VA*4-1);
+            tp_bounds(tp,cur,VA);
+            int a = (*(cur+1)).string.val-f->code.string.val;
+/*            f->line = tp_string_n((*(cur+1)).string.val,VA*4-1);*/
+            f->line = tp_string_sub(tp,f->code,a,a+VA*4-1);
 /*             fprintf(stderr,"%7d: %s\n",UVBC,f->line.string.val);*/
             cur += VA; f->lineno = UVBC;
             break;
         case TP_IFILE: f->fname = RA; break;
         case TP_INAME: f->name = RA; break;
         case TP_IREGS: f->cregs = VA; break;
-        default: tp_raise(0,"tp_step: invalid instruction %d",e.i); break;
+        default:
+            tp_raise(0,tp_string("(tp_step) RuntimeError: invalid instruction"));
+            break;
     }
+    tp_time_update(tp);
+    tp_mem_update(tp);
+    tp_bounds(tp,cur,1);
     cur += 1;
     }
     SR(0);
@@ -319,40 +370,24 @@ tp_obj tp_ez_call(TP, const char *mod, const char *fnc, tp_obj params) {
     return tp_call(tp,tmp,params);
 }
 
-/* Function: tp_import
- * Imports a module.
- * 
- * Parameters:
- * fname - The filename of a file containing the module's code.
- * name - The name of the module.
- * codes - The module's code. If this is given, fname is ignored.
- *
- * Returns:
- * The module object.
- */
-tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
-    tp_obj code = tp_None;
+tp_obj _tp_import(TP, tp_obj fname, tp_obj name, tp_obj code) {
     tp_obj g;
 
-    if (!((fname && strstr(fname,".tpc")) || codes)) {
-        return tp_ez_call(tp,"py2bc","import_fname",tp_params_v(tp,2,tp_string(fname),tp_string(name)));
+    if (!((fname.type != TP_NONE && _tp_str_index(fname,tp_string(".tpc"))!=-1) || code.type != TP_NONE)) {
+        return tp_ez_call(tp,"py2bc","import_fname",tp_params_v(tp,2,fname,name));
     }
 
-    if (!codes) {
-        tp_params_v(tp,1,tp_string(fname));
+    if (code.type == TP_NONE) {
+        tp_params_v(tp,1,fname);
         code = tp_load(tp);
-        /* We cast away the constness. */
-        codes = (void *)code.string.val;
-    } else {
-        code = tp_data(tp,0,codes);
     }
 
     g = tp_dict(tp);
-    tp_set(tp,g,tp_string("__name__"),tp_string(name));
+    tp_set(tp,g,tp_string("__name__"),name);
     tp_set(tp,g,tp_string("__code__"),code);
     tp_set(tp,g,tp_string("__dict__"),g);
-    tp_frame(tp,g,(tp_code*)codes,0);
-    tp_set(tp,tp->modules,tp_string(name),g);
+    tp_frame(tp,g,code,0);
+    tp_set(tp,tp->modules,name,g);
 
     if (!tp->jmp) { tp_run(tp,tp->cur); }
 
@@ -360,26 +395,43 @@ tp_obj tp_import(TP, char const *fname, char const *name, void *codes) {
 }
 
 
+/* Function: tp_import
+ * Imports a module.
+ * 
+ * Parameters:
+ * fname - The filename of a file containing the module's code.
+ * name - The name of the module.
+ * codes - The module's code.  If this is given, fname is ignored.
+ * len - The length of the bytecode.
+ *
+ * Returns:
+ * The module object.
+ */
+tp_obj tp_import(TP, const char * fname, const char * name, void *codes, int len) {
+    tp_obj f = fname?tp_string(fname):tp_None;
+    tp_obj bc = codes?tp_string_n((const char*)codes,len):tp_None;
+    return _tp_import(tp,f,tp_string(name),bc);
+}
+
+
 
 tp_obj tp_exec_(TP) {
     tp_obj code = TP_OBJ();
     tp_obj globals = TP_OBJ();
-    tp_frame(tp,globals,(tp_code*)code.string.val,0);
+    tp_frame(tp,globals,code,0);
     return tp_None;
 }
 
 
 tp_obj tp_import_(TP) {
     tp_obj mod = TP_OBJ();
-    char const *s;
     tp_obj r;
 
     if (tp_has(tp,tp->modules,mod).number.val) {
         return tp_get(tp,tp->modules,mod);
     }
-
-    s = TP_CSTR(mod);
-    r = tp_import(tp,TP_CSTR(tp_add(tp,mod,tp_string(".tpc"))),s,0);
+    
+    r = _tp_import(tp,tp_add(tp,mod,tp_string(".tpc")),mod,tp_None);
     return r;
 }
 
@@ -395,7 +447,7 @@ void tp_builtins(TP) {
     {"int",tp_int}, {"exec",tp_exec_}, {"exists",tp_exists},
     {"mtime",tp_mtime}, {"number",tp_float}, {"round",tp_round},
     {"ord",tp_ord}, {"merge",tp_merge}, {"getraw",tp_getraw},
-    {"setmeta",tp_setmeta}, {"getmeta",tp_getmeta},
+    {"setmeta",tp_setmeta}, {"getmeta",tp_getmeta}, {"sandbox",tp_sandbox_},
     {0,0},
     };
     int i; for(i=0; b[i].s; i++) {
@@ -416,9 +468,8 @@ void tp_args(TP,int argc, char *argv[]) {
     tp_set(tp,tp->builtins,tp_string("ARGV"),self);
 }
 
-
-tp_obj tp_main(TP,char *fname, void *code) {
-    return tp_import(tp,fname,"__main__",code);
+tp_obj tp_main(TP,char *fname, void *code, int len) {
+    return tp_import(tp,fname,"__main__",code, len);
 }
 
 /* Function: tp_compile
@@ -432,9 +483,9 @@ tp_obj tp_compile(TP, tp_obj text, tp_obj fname) {
 /* Function: tp_exec
  * Execute VM code.
  */
-tp_obj tp_exec(TP,tp_obj code, tp_obj globals) {
+tp_obj tp_exec(TP, tp_obj code, tp_obj globals) {
     tp_obj r=tp_None;
-    tp_frame(tp,globals,(tp_code*)code.string.val,&r);
+    tp_frame(tp,globals,code,&r);
     tp_run(tp,tp->cur);
     return r;
 }
@@ -460,6 +511,5 @@ tp_vm *tp_init(int argc, char *argv[]) {
     tp_compiler(tp);
     return tp;
 }
-
 
 /**/

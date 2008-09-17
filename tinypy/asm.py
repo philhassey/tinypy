@@ -38,8 +38,8 @@ def prepare(x):
 def dequote(x):
     """ Removes outermost quotes from a string, if they exist """    
     if x[0] == '"' and x[len(x)-1] == '"':
-        tmp = x[1:len(x)-1]
-    return tmp
+        return x[1:len(x)-1]
+    return x
 
 def assemble(asmc):    
     asmc = asmc.strip()
@@ -63,10 +63,8 @@ def assemble(asmc):
             text += chr(0) * (n - len(d))
             bc.append(text)
         if i == "STRING":
-            n = b * 256 + c
             d = dequote(d)
-            text = d
-            text += chr(0) * ((int(n/4) + 1) * 4 - len(d))
+            text = d + "\0"*(4-len(d)%4)
             bc.append(text)
         elif i == "NUMBER":
             d = int(d)

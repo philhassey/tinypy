@@ -4,16 +4,10 @@
 
 tp_obj tp_print(TP) {
     int n = 0;
-    tp_obj e, len;
+    tp_obj e;
     TP_LOOP(e)
         if (n) { printf(" "); }
-        if (e.type == TP_STRING) {
-            len = tp_len(tp, e);
-            fwrite(TP_CSTR(e), sizeof (char), len.number.val, stdout);
-        }
-        else {
-            printf("%s", TP_CSTR(e));
-        }
+        tp_echo(tp,e);
         n += 1;
     TP_END;
     printf("\n");
@@ -23,7 +17,9 @@ tp_obj tp_print(TP) {
 tp_obj tp_bind(TP) {
     tp_obj r = TP_TYPE(TP_FNC);
     tp_obj self = TP_OBJ();
-    return tp_fnc_new(tp,r.fnc.ftype|2,r.fnc.val,self,r.fnc.info->globals);
+    return tp_fnc_new(tp,
+        r.fnc.ftype|2,r.fnc.cfnc,r.fnc.info->code,
+        self,r.fnc.info->globals);
 }
 
 tp_obj tp_min(TP) {
@@ -52,7 +48,7 @@ tp_obj tp_copy(TP) {
     } else if (type == TP_DICT) {
         return _tp_dict_copy(tp,r);
     }
-    tp_raise(tp_None,"tp_copy(%s)",TP_CSTR(r));
+    tp_raise(tp_None,tp_string("(tp_copy) TypeError: ?"));
 }
 
 
@@ -61,11 +57,10 @@ tp_obj tp_len_(TP) {
     return tp_len(tp,e);
 }
 
-
 tp_obj tp_assert(TP) {
     int a = TP_NUM();
     if (a) { return tp_None; }
-    tp_raise(tp_None,"%s","assert failed");
+    tp_raise(tp_None,tp_string("(tp_assert) AssertionError"));
 }
 
 tp_obj tp_range(TP) {
@@ -91,21 +86,21 @@ tp_obj tp_range(TP) {
  * enables this, you better remove it before deploying your app :P
  */
 tp_obj tp_system(TP) {
-    char const *s = TP_STR();
+    char s[TP_CSTR_LEN]; tp_cstr(tp,TP_STR(),s,TP_CSTR_LEN);
     int r = system(s);
     return tp_number(r);
 }
 
 tp_obj tp_istype(TP) {
     tp_obj v = TP_OBJ();
-    char const *t = TP_STR();
-    if (strcmp("string",t) == 0) { return tp_number(v.type == TP_STRING); }
-    if (strcmp("list",t) == 0) { return tp_number(v.type == TP_LIST); }
-    if (strcmp("dict",t) == 0) { return tp_number(v.type == TP_DICT); }
-    if (strcmp("number",t) == 0) { return tp_number(v.type == TP_NUMBER); }
-    if (strcmp("fnc",t) == 0) { return tp_number(v.type == TP_FNC && (v.fnc.ftype&2) == 0); }
-    if (strcmp("method",t) == 0) { return tp_number(v.type == TP_FNC && (v.fnc.ftype&2) != 0); }
-    tp_raise(tp_None,"is_type(%s,%s)",TP_CSTR(v),t);
+    tp_obj t = TP_STR();
+    if (tp_cmp(tp,t,tp_string("string")) == 0) { return tp_number(v.type == TP_STRING); }
+    if (tp_cmp(tp,t,tp_string("list")) == 0) { return tp_number(v.type == TP_LIST); }
+    if (tp_cmp(tp,t,tp_string("dict")) == 0) { return tp_number(v.type == TP_DICT); }
+    if (tp_cmp(tp,t,tp_string("number")) == 0) { return tp_number(v.type == TP_NUMBER); }
+    if (tp_cmp(tp,t,tp_string("fnc")) == 0) { return tp_number(v.type == TP_FNC && (v.fnc.ftype&2) == 0); }
+    if (tp_cmp(tp,t,tp_string("method")) == 0) { return tp_number(v.type == TP_FNC && (v.fnc.ftype&2) != 0); }
+    tp_raise(tp_None,tp_string("(is_type) TypeError: ?"));
 }
 
 
@@ -114,20 +109,22 @@ tp_obj tp_float(TP) {
     int ord = TP_DEFAULT(tp_number(0)).number.val;
     int type = v.type;
     if (type == TP_NUMBER) { return v; }
-    if (type == TP_STRING) {
-        if (strchr(TP_CSTR(v),'.')) { return tp_number(atof(TP_CSTR(v))); }
-        return(tp_number(strtol(TP_CSTR(v),0,ord)));
+    if (type == TP_STRING && v.string.len < 32) {
+        char s[32]; memset(s,0,v.string.len+1);
+        memcpy(s,v.string.val,v.string.len);
+        if (strchr(s,'.')) { return tp_number(atof(s)); }
+        return(tp_number(strtol(s,0,ord)));
     }
-    tp_raise(tp_None,"tp_float(%s)",TP_CSTR(v));
+    tp_raise(tp_None,tp_string("(tp_float) TypeError: ?"));
 }
 
 
 tp_obj tp_save(TP) {
-    char const *fname = TP_STR();
+    char fname[256]; tp_cstr(tp,TP_STR(),fname,256);
     tp_obj v = TP_OBJ();
     FILE *f;
     f = fopen(fname,"wb");
-    if (!f) { tp_raise(tp_None,"tp_save(%s,...)",fname); }
+    if (!f) { tp_raise(tp_None,tp_string("(tp_save) IOError: ?")); }
     fwrite(v.string.val,v.string.len,1,f);
     fclose(f);
     return tp_None;
@@ -138,17 +135,18 @@ tp_obj tp_load(TP) {
     long l;
     tp_obj r;
     char *s;
-    char const *fname = TP_STR();
+    char fname[256]; tp_cstr(tp,TP_STR(),fname,256);
     struct stat stbuf;
     stat(fname, &stbuf);
     l = stbuf.st_size;
     f = fopen(fname,"rb");
     if (!f) {
-        tp_raise(tp_None,"tp_load(%s)",fname);
+        tp_raise(tp_None,tp_string("(tp_load) IOError: ?"));
     }
     r = tp_string_t(tp,l);
     s = r.string.info->s;
     fread(s,1,l,f);
+/*    if (rr !=l) { printf("hmmn: %d %d\n",rr,(int)l); }*/
     fclose(f);
     return tp_track(tp,r);
 }
@@ -177,30 +175,37 @@ tp_obj tp_round(TP) {
 }
 
 tp_obj tp_exists(TP) {
-    char const *s = TP_STR();
+    char fname[TP_CSTR_LEN]; tp_cstr(tp,TP_STR(),fname,TP_CSTR_LEN);
     struct stat stbuf;
-    return tp_number(!stat(s,&stbuf));
+    return tp_number(!stat(fname,&stbuf));
 }
 tp_obj tp_mtime(TP) {
-    char const *s = TP_STR();
+    char fname[TP_CSTR_LEN]; tp_cstr(tp,TP_STR(),fname,TP_CSTR_LEN);
     struct stat stbuf;
-    if (!stat(s,&stbuf)) { return tp_number(stbuf.st_mtime); }
-    tp_raise(tp_None,"tp_mtime(%s)",s);
+    if (!stat(fname,&stbuf)) { return tp_number(stbuf.st_mtime); }
+    tp_raise(tp_None,tp_string("(tp_mtime) IOError: ?"));
 }
 
-int _tp_lookup(TP,tp_obj self, tp_obj k, tp_obj *meta) {
+int _tp_lookup_(TP,tp_obj self, tp_obj k, tp_obj *meta, int depth) {
     int n = _tp_dict_find(tp,self.dict.val,k);
     if (n != -1) {
         *meta = self.dict.val->items[n].val;
         return 1;
     }
-    if (self.dict.dtype && self.dict.val->meta.type == TP_DICT && _tp_lookup(tp,self.dict.val->meta,k,meta)) {
+    depth--; if (!depth) { tp_raise(0,tp_string("(tp_lookup) RuntimeError: maximum lookup depth exceeded")); }
+    if (self.dict.dtype && self.dict.val->meta.type == TP_DICT && _tp_lookup_(tp,self.dict.val->meta,k,meta,depth)) {
         if (self.dict.dtype == 2 && meta->type == TP_FNC) {
-            *meta = tp_fnc_new(tp,meta->fnc.ftype|2,meta->fnc.val,self,meta->fnc.info->globals);
+            *meta = tp_fnc_new(tp,meta->fnc.ftype|2,
+                meta->fnc.cfnc,meta->fnc.info->code,
+                self,meta->fnc.info->globals);
         }
         return 1;
     }
     return 0;
+}
+
+int _tp_lookup(TP,tp_obj self, tp_obj k, tp_obj *meta) {
+    return _tp_lookup_(tp,self,k,meta,8);
 }
 
 #define TP_META_BEGIN(self,name) \
@@ -308,3 +313,14 @@ tp_obj tp_class(TP) {
     return klass;
 }
 
+tp_obj tp_sandbox_(TP) {
+    tp_num time = TP_NUM();
+    tp_num mem = TP_NUM();
+    tp_sandbox(tp, time, mem);
+    tp_del(tp, tp->builtins, tp_string("sandbox"));
+    tp_del(tp, tp->builtins, tp_string("mtime"));
+    tp_del(tp, tp->builtins, tp_string("load"));
+    tp_del(tp, tp->builtins, tp_string("save"));
+    tp_del(tp, tp->builtins, tp_string("system"));
+    return tp_None;
+}

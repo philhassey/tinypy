@@ -2,6 +2,9 @@ import sys
 __tinypy__ = "tinypy" in sys.version
 if not __tinypy__:
     from boot import *
+    __tinypy__ = False
+else:
+    __tinypy__ = True
     
 def get_ops():
     """ Builds an value <-> opcode name dictionary """

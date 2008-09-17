@@ -35,6 +35,7 @@ void tp_follow(TP,tp_obj v) {
     if (type == TP_FNC) {
         tp_grey(tp,v.fnc.info->self);
         tp_grey(tp,v.fnc.info->globals);
+        tp_grey(tp,v.fnc.info->code);
     }
 }
 
@@ -50,42 +51,42 @@ void tp_reset(TP) {
 }
 
 void tp_gc_init(TP) {
-    tp->white = _tp_list_new();
-    tp->strings = _tp_dict_new();
-    tp->grey = _tp_list_new();
-    tp->black = _tp_list_new();
+    tp->white = _tp_list_new(tp);
+    tp->strings = _tp_dict_new(tp);
+    tp->grey = _tp_list_new(tp);
+    tp->black = _tp_list_new(tp);
     tp->steps = 0;
 }
 
 void tp_gc_deinit(TP) {
-    _tp_list_free(tp->white);
-    _tp_dict_free(tp->strings);
-    _tp_list_free(tp->grey);
-    _tp_list_free(tp->black);
+    _tp_list_free(tp, tp->white);
+    _tp_dict_free(tp, tp->strings);
+    _tp_list_free(tp, tp->grey);
+    _tp_list_free(tp, tp->black);
 }
 
 void tp_delete(TP,tp_obj v) {
     int type = v.type;
     if (type == TP_LIST) {
-        _tp_list_free(v.list.val);
+        _tp_list_free(tp, v.list.val);
         return;
     } else if (type == TP_DICT) {
-        _tp_dict_free(v.dict.val);
+        _tp_dict_free(tp, v.dict.val);
         return;
     } else if (type == TP_STRING) {
-        tp_free(v.string.info);
+        tp_free(tp, v.string.info);
         return;
     } else if (type == TP_DATA) {
         if (v.data.info->free) {
             v.data.info->free(tp,v);
         }
-        tp_free(v.data.info);
+        tp_free(tp, v.data.info);
         return;
     } else if (type == TP_FNC) {
-        tp_free(v.fnc.info);
+        tp_free(tp, v.fnc.info);
         return;
     }
-    tp_raise(,"tp_delete(%s)",TP_CSTR(v));
+    tp_raise(,tp_string("(tp_delete) TypeError: ?"));
 }
 
 void tp_collect(TP) {
@@ -96,6 +97,10 @@ void tp_collect(TP) {
         if (r.type == TP_STRING) {
             /*this can't be moved into tp_delete, because tp_delete is
                also used by tp_track_s to delete redundant strings*/
+            /* these two lines of codes ensure that we remove
+               the original string which was placed in the cache */
+            r.string.len = r.string.info->len;
+            r.string.val = r.string.info->s;
             _tp_dict_del(tp,tp->strings,r,"tp_collect");
         }
         tp_delete(tp,r);

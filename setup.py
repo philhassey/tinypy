@@ -1,12 +1,13 @@
 import os
 import sys
 
-VARS = {}
+VARS = {'$CPYTHON':''}
 TOPDIR = os.path.abspath(os.path.dirname(__file__))
 TEST = False
 CLEAN = False
 BOOT = False
 DEBUG = False
+VALGRIND = False
 CORE = ['tokenize','parse','encode','py2bc']
 MODULES = []
 
@@ -16,33 +17,54 @@ def main():
         print HELP
         return
     
-    global TEST,CLEAN,BOOT,DEBUG
+    global TEST,CLEAN,BOOT,DEBUG,VALGRIND
     TEST = 'test' in sys.argv
     CLEAN = 'clean' in sys.argv
     BOOT = 'boot' in sys.argv
     DEBUG = 'debug' in sys.argv
+    VALGRIND = 'valgrind' in sys.argv
     CLEAN = CLEAN or BOOT
     TEST = TEST or BOOT
-    
+        
     get_libs()
     build_mymain()
+
+    build = None
+    
+    if "linux" in sys.platform:
+        vars_linux()
+        build = build_gcc
+    elif "darwin" in sys.platform:
+        vars_osx()
+        build = build_gcc
+    elif "win" in sys.platform:
+        build = build_vs
+
+    #full list of compilers in distutils.ccompiler.show_compilers()
+    if "-cunix" in sys.argv:
+        build = build_gcc
+    elif '-cmsvc' in sys.argv:
+        build = build_vs
+    elif '-cmingw32' in sys.argv:
+        vars_windows()
+        build = build_gcc
+
+    if build == None:
+        print "couldn't detect OS or incorrect compiler command. defaulting to GCC."
+        build = build_gcc
     
     cmd = sys.argv[1]
-    if cmd == 'linux':
-        vars_linux()
-        build_gcc()
-    elif cmd == 'osx':
-        vars_osx()
-        build_gcc()
-    elif cmd == 'mingw':
-        vars_windows()
-        build_gcc()
-    elif cmd == 'vs':
-        build_vs()
+    if cmd == "tinypy":
+        build()
     elif cmd == '64k':
         build_64k()
     elif cmd == 'blob':
         build_blob()
+    elif cmd == "build":
+        build_blob()
+        build_cpython()
+    elif cmd == "install":
+        install_cpython()
     else:
         print 'invalid command'
 
@@ -50,23 +72,21 @@ HELP = """
 python setup.py command [options] [modules]
 
 Commands:
-    linux - build tinypy for linux
-    osx - build tinypy for OS X
-    mingw - build tinypy for mingw under windows
-    vs - build tinypy using Visual Studio 2005 / 2008
-    
-    64k - build a 64k version of the tinypy source
-    blob - build a single tinypy.c and tinypy.h
-    
-    build - build CPython module ***
-    install - install CPython module ***
-    
+    tinypy - build a vanilla tinypy interpreter binary
+    64k - generate a 64k version of the tinypy source
+    blob - generate a single tinypy.c and tinypy.h
+
+    build - build CPython module
+    install - install CPython module
+
 Options:
     test - run tests during build
     clean - rebuild all .tpc during build
     boot - fully bootstrap and test tinypy
     debug - build with debug options on
-    
+    valgrind - run tests through valgrind
+    -cCOMPILER - build for a specific platform (-cmingw32, -clinux, -cmsvc, -cunix)
+
 Modules:
     math - build math module
     random - build random module *
@@ -74,6 +94,7 @@ Modules:
     marshal - build marshal module ***
     jit - build jit module ***
     re - build re module ***
+    ??? - build other modules in the modules folder
 
 * coming soon!!
 ** proof-of-concept included
@@ -112,6 +133,7 @@ def vars_windows():
     VARS['$FLAGS'] = '-lmingw32'
     VARS['$WFLAGS'] = '-Wwrite-strings -Wall'
     VARS['$SYS'] = '-mingw32'
+    VARS['$CPYTHON'] = "-c mingw32"
 
     if 'pygame' in MODULES:
         VARS['$FLAGS'] += ' -Ic:\\mingw\\include\\SDL -lSDLmain -lSDL '
@@ -122,6 +144,8 @@ def do_cmd(cmd):
     if '$' in cmd:
         print 'vars_error',cmd
         sys.exit(-1)
+    if VALGRIND and (cmd.startswith("./") or cmd.startswith("../")):
+        cmd = "valgrind " + cmd
     
     print cmd
     r = os.system(cmd)
@@ -154,7 +178,7 @@ def open_tinypy(fname,*args):
 def build_blob():
     mods = CORE[:]
     do_chdir(os.path.join(TOPDIR,'tinypy'))
-    for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
+    for mod in mods: py2bc('python py2bc.py $SRC $DEST',mod)
     do_chdir(os.path.join(TOPDIR))
     
     out = []
@@ -167,7 +191,7 @@ def build_blob():
     out.append("#define TINYPY_H")
     out.extend([v.rstrip() for v in open_tinypy('tp.h','r')])
     for fname in ['list.c','dict.c','misc.c','string.c','builtins.c',
-        'gc.c','ops.c','vm.c','tp.c']:
+        'gc.c','ops.c','vm.c','tp.c', 'sandbox.c']:
         for line in open_tinypy(fname,'r'):
             line = line.rstrip()
             if not len(line): continue
@@ -203,11 +227,13 @@ def build_blob():
     # if someone wants to include tinypy.c they don't have to have
     # tinypy.h cluttering up their folder
     
-    for mod in CORE:
-        out.append("""extern unsigned char tp_%s[];"""%mod)
+    if not os.path.exists(os.path.join(TOPDIR, 'tinypy', 'bc.c')):
+        do_chdir(os.path.join(TOPDIR,'tinypy'))
+        build_bc()
+        do_chdir(os.path.join(TOPDIR))
 
     for fname in ['list.c','dict.c','misc.c','string.c','builtins.c',
-        'gc.c','ops.c','vm.c','tp.c','bc.c']:
+        'gc.c','ops.c','vm.c','bc.c','tp.c','sandbox.c']:
         for line in open_tinypy(fname,'r'):
             line = line.rstrip()
             if line.find('#include "') != -1: continue
@@ -302,7 +328,7 @@ def build_mymain():
     
 def test_mods(cmd):
     for m in MODULES:
-        tests = os.path.join('modules',m,'tests.py')
+        tests = os.path.join('..','modules',m,'tests.py')
         if not os.path.exists(tests): continue
         cmd = cmd.replace('$TESTS',tests)
         do_cmd(cmd)
@@ -323,14 +349,14 @@ def build_vs():
     os.chdir(os.path.join(TOPDIR,'tinypy'))
     do_cmd('cl vmmain.c /Od /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe')
     do_cmd('python tests.py -win')
-    for mod in mods: do_cmd('python py2bc.py %s.py %s.tpc'%(mod,mod))
+    for mod in mods: py2bc('python py2bc.py $SRC $DEST',mod)
     do_cmd('vm.exe tests.tpc -win')
-    for mod in mods: do_cmd('vm.exe py2bc.tpc %s.py %s.tpc'%(mod,mod))
+    for mod in mods: py2bc('vm.exe py2bc.tpc $SRC $DEST',mod)
     build_bc()
     do_cmd('cl /Od tpmain.c /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe')
     #second pass - builts optimized binaries and stuff
     do_cmd('tinypy.exe tests.py -win')
-    for mod in mods: do_cmd('tinypy.exe py2bc.py %s.py %s.tpc -nopos'%(mod,mod))
+    for mod in mods: py2bc('tinypy.exe py2bc.py $SRC $DEST'+nopos,mod)
     build_bc(True)
     do_cmd('cl /Os vmmain.c /D "NDEBUG" /Gy /GL /Zi /MD /Fdvm.pdb /Fmvm.map /Fevm.exe /link /opt:ref /opt:icf')
     do_cmd('cl /Os tpmain.c /D "NDEBUG" /Gy /GL /Zi /MD /Fdtinypy.pdb /Fmtinypy.map /Fetinypy.exe /link /opt:ref,icf /OPT:NOWIN98')
@@ -408,5 +434,27 @@ def build_64k():
         f.close()
         print '%s saved to %s'%(src,dest)
 
+def build_cpython():
+    try: from distutils.core import setup, Extension
+    except: print "cannot import distutils"
+
+    do_chdir(os.path.join(TOPDIR,'cpython'))
+    setup(name = "tinypy",
+      version = "0.8",
+      description = "tinypy module for CPython",
+      url = "http://www.tinypy.org/",
+      ext_modules = [Extension("tinypy", ["cpython.c"], define_macros = [('CPYTHON_MOD', None)])])
+    
+def install_cpython():
+    try: from distutils.core import setup, Extension
+    except: print "cannot import distutils"
+
+    do_chdir(os.path.join(TOPDIR,'cpython'))
+    setup(name = "tinypy",
+      version = "0.8",
+      description = "tinypy module for CPython",
+      url = "http://www.tinypy.org/",
+      ext_modules = [Extension("tinypy", ["cpython.c"], define_macros = [('CPYTHON_MOD', None)])])
+    
 if __name__ == '__main__':
     main()

@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <time.h>
 
 #ifdef __GNUC__
 #define tp_inline __inline__
@@ -32,9 +33,9 @@
 #error "Unsuported compiler"
 #endif
 
-#define tp_malloc(x) calloc((x),1)
-#define tp_realloc(x,y) realloc(x,y)
-#define tp_free(x) free(x)
+/*  #define tp_malloc(x) calloc((x),1)
+    #define tp_realloc(x,y) realloc(x,y)
+    #define tp_free(x) free(x) */
 
 /* #include <gc/gc.h>
    #define tp_malloc(x) GC_MALLOC(x)
@@ -71,7 +72,7 @@ typedef struct tp_fnc_ {
     int type;
     struct _tp_fnc *info;
     int ftype;
-    void *val;
+    void *cfnc;
 } tp_fnc_;
 typedef struct tp_data_ {
     int type;
@@ -115,6 +116,7 @@ typedef union tp_obj {
 
 typedef struct _tp_string {
     int gci;
+    int len;
     char s[1];
 } _tp_string;
 typedef struct _tp_list {
@@ -143,6 +145,7 @@ typedef struct _tp_fnc {
     int gci;
     tp_obj self;
     tp_obj globals;
+    tp_obj code;
 } _tp_fnc;
 
 
@@ -154,7 +157,8 @@ typedef union tp_code {
 } tp_code;
 
 typedef struct tp_frame_ {
-    tp_code *codes;
+/*    tp_code *codes; */
+    tp_obj code;
     tp_code *cur;
     tp_code *jmp;
     tp_obj *regs;
@@ -169,6 +173,7 @@ typedef struct tp_frame_ {
 
 #define TP_GCMAX 4096
 #define TP_FRAMES 256
+#define TP_REGS_EXTRA 2
 /* #define TP_REGS_PER_FRAME 256*/
 #define TP_REGS 16384
 
@@ -201,16 +206,26 @@ typedef struct tp_vm {
     tp_obj *regs;
     tp_obj root;
     jmp_buf buf;
+#ifdef CPYTHON_MOD
+    jmp_buf nextexpr;
+#endif
     int jmp;
     tp_obj ex;
     char chars[256][2];
     int cur;
-    /* gc*/
+    /* gc */
     _tp_list *white;
     _tp_list *grey;
     _tp_list *black;
     _tp_dict *strings;
     int steps;
+    /* sandbox */
+    clock_t clocks;
+    double time_elapsed;
+    double time_limit;
+    size_t mem_limit;
+    size_t mem_used;
+    int mem_exceeded;
 } tp_vm;
 
 #define TP tp_vm *tp
@@ -221,14 +236,22 @@ typedef struct _tp_data {
 
 #define tp_True tp_number(1)
 #define tp_False tp_number(0)
-#define TP_CSTR(v) ((tp_str(tp,(v))).string.val)
 
 extern tp_obj tp_None;
 
+void *tp_malloc(TP, size_t);
+void *tp_realloc(TP, void *, size_t);
+void tp_free(TP, void *);
+void tp_sandbox(TP, double, size_t);
+void tp_time_update(TP);
+void tp_mem_update(TP);
+
+void tp_run(TP,int cur);
 void tp_set(TP,tp_obj,tp_obj,tp_obj);
 tp_obj tp_get(TP,tp_obj,tp_obj);
 tp_obj tp_has(TP,tp_obj self, tp_obj k);
 tp_obj tp_len(TP,tp_obj);
+void tp_del(TP,tp_obj,tp_obj);
 tp_obj tp_str(TP,tp_obj);
 int tp_cmp(TP,tp_obj,tp_obj);
 void _tp_raise(TP,tp_obj);
@@ -236,6 +259,7 @@ tp_obj tp_printf(TP,char const *fmt,...);
 tp_obj tp_track(TP,tp_obj);
 void tp_grey(TP,tp_obj);
 tp_obj tp_call(TP, tp_obj fnc, tp_obj params);
+tp_obj tp_add(TP,tp_obj a, tp_obj b) ;
 
 /* __func__ __VA_ARGS__ __FILE__ __LINE__ */
 
@@ -245,18 +269,64 @@ tp_obj tp_call(TP, tp_obj fnc, tp_obj params);
  * This macro will return from the current function returning "r". The
  * remaining parameters are used to format the exception message.
  */
+/*
 #define tp_raise(r,fmt,...) { \
     _tp_raise(tp,tp_printf(tp,fmt,__VA_ARGS__)); \
     return r; \
 }
+*/
+#define tp_raise(r,v) { \
+    _tp_raise(tp,v); \
+    return r; \
+}
+
+/* Function: tp_string
+ * Creates a new string object from a C string.
+ * 
+ * Given a pointer to a C string, creates a tinypy object representing the
+ * same string.
+ * 
+ * *Note* Only a reference to the string will be kept by tinypy, so make sure
+ * it does not go out of scope, and don't de-allocate it. Also be aware that
+ * tinypy will not delete the string for you. In many cases, it is best to
+ * use <tp_string_t> or <tp_string_slice> to create a string where tinypy
+ * manages storage for you.
+ */
+tp_inline static tp_obj tp_string(char const *v) {
+    tp_obj val;
+    tp_string_ s = {TP_STRING, 0, v, 0};
+    s.len = strlen(v);
+    val.string = s;
+    return val;
+}
+
+#define TP_CSTR_LEN 256
+
+tp_inline static void tp_cstr(TP,tp_obj v, char *s, int l) {
+    if (v.type != TP_STRING) { 
+        tp_raise(,tp_string("(tp_cstr) TypeError: value not a string"));
+    }
+    if (v.string.len >= l) {
+        tp_raise(,tp_string("(tp_cstr) TypeError: value too long"));
+    }
+    memset(s,0,l);
+    memcpy(s,v.string.val,v.string.len);
+}
+
+
 #define TP_OBJ() (tp_get(tp,tp->params,tp_None))
 tp_inline static tp_obj tp_type(TP,int t,tp_obj v) {
-    if (v.type != t) { tp_raise(tp_None,"_tp_type(%d,%s)",t,TP_CSTR(v)); }
+    if (v.type != t) { tp_raise(tp_None,tp_string("(tp_type) TypeError: unexpected type")); }
     return v;
 }
+
+
+
+#define TP_NO_LIMIT 0
 #define TP_TYPE(t) tp_type(tp,t,TP_OBJ())
 #define TP_NUM() (TP_TYPE(TP_NUMBER).number.val)
-#define TP_STR() (TP_CSTR(TP_TYPE(TP_STRING)))
+/* #define TP_STR() (TP_CSTR(TP_TYPE(TP_STRING))) */
+#define TP_STR() (TP_TYPE(TP_STRING))
 #define TP_DEFAULT(d) (tp->params.list.val->len?tp_get(tp,tp->params,tp_None):(d))
 
 /* Macro: TP_LOOP
@@ -296,24 +366,9 @@ tp_inline static tp_obj tp_number(tp_num v) {
     return val;
 }
 
-/* Function: tp_string
- * Creates a new string object from a C string.
- * 
- * Given a pointer to a C string, creates a tinypy object representing the
- * same string.
- * 
- * *Note* Only a reference to the string will be kept by tinypy, so make sure
- * it does not go out of scope, and don't de-allocate it. Also be aware that
- * tinypy will not delete the string for you. In many cases, it is best to
- * use <tp_string_t> or <tp_string_slice> to create a string where tinypy
- * manages storage for you.
- */
-tp_inline static tp_obj tp_string(char const *v) {
-    tp_obj val;
-    tp_string_ s = {TP_STRING, 0, v, 0};
-    s.len = strlen(v);
-    val.string = s;
-    return val;
+tp_inline static void tp_echo(TP,tp_obj e) {
+    e = tp_str(tp,e);
+    fwrite(e.string.val,1,e.string.len,stdout);
 }
 
 /* Function: tp_string_n

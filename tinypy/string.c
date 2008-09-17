@@ -1,10 +1,41 @@
 /* File: String
  * String handling functions.
  */
+ 
+/*
+ * Create a new empty string of a certain size.
+ * Does not put it in for GC tracking, since contents should be
+ * filled after returning.
+ */ 
 tp_obj tp_string_t(TP, int n) {
     tp_obj r = tp_string_n(0,n);
-    r.string.info = (_tp_string*)tp_malloc(sizeof(_tp_string)+n);
+    r.string.info = (_tp_string*)tp_malloc(tp, sizeof(_tp_string)+n);
+    r.string.info->len = n;
     r.string.val = r.string.info->s;
+    return r;
+}
+
+/*
+ * Create a new string which is a copy of some memory.
+ * This is put into GC tracking for you.
+ */
+tp_obj tp_string_copy(TP, const char *s, int n) {
+    tp_obj r = tp_string_t(tp,n);
+    memcpy(r.string.info->s,s,n);
+    return tp_track(tp,r);
+}
+
+/*
+ * Create a new string which is a substring slice of another STRING.
+ * Does not need to be put into GC tracking, as its parent is
+ * already being tracked (supposedly).
+ */
+tp_obj tp_string_sub(TP, tp_obj s, int a, int b) {
+    int l = s.string.len;
+    a = _tp_max(0,(a<0?l+a:a)); b = _tp_min(l,(b<0?l+b:b));
+    tp_obj r = s;
+    r.string.val += a;
+    r.string.len = b-a;
     return r;
 }
 
@@ -86,10 +117,8 @@ tp_obj tp_join(TP) {
  * A new string object corresponding to s[a:b] in actual tinypy code.
  */
 tp_obj tp_string_slice(TP,tp_obj s, int a, int b) {
-    tp_obj r = tp_string_t(tp,b-a);
-    char *m = r.string.info->s;
-    memcpy(m,s.string.val+a,b-a);
-    return tp_track(tp,r);
+    tp_obj r = tp_string_copy(tp,s.string.val+a,b-a);
+    return r;
 }
 
 tp_obj tp_split(TP) {
@@ -120,7 +149,7 @@ tp_obj tp_str_index(TP) {
     tp_obj v = TP_OBJ();
     int n = _tp_str_index(s,v);
     if (n >= 0) { return tp_number(n); }
-    tp_raise(tp_None,"tp_str_index(%s,%s)",TP_CSTR(s),TP_CSTR(v));
+    tp_raise(tp_None,tp_string("(tp_str_index) ValueError: substring not found"));
 }
 
 tp_obj tp_str2(TP) {
@@ -133,26 +162,29 @@ tp_obj tp_chr(TP) {
     return tp_string_n(tp->chars[(unsigned char)v],1);
 }
 tp_obj tp_ord(TP) {
-    char const *s = TP_STR();
-    return tp_number((unsigned char)s[0]);
+    tp_obj s = TP_STR();
+    if (s.string.len != 1) {
+        tp_raise(tp_None,tp_string("(tp_ord) TypeError: ord() expected a character"));
+    }
+    return tp_number((unsigned char)s.string.val[0]);
 }
 
 tp_obj tp_strip(TP) {
-    tp_obj e = TP_TYPE(TP_STRING);
-    char const *v = e.string.val;
+    tp_obj o = TP_TYPE(TP_STRING);
+    char const *v = o.string.val; int l = o.string.len;
+    int i; int a = l, b = 0;
+    tp_obj r;
     char *s;
-    int len = e.string.len;
-    int i, a = len, b = 0;
-    for (i=0; i<len; i++) {
+    for (i=0; i<l; i++) {
         if (v[i] != ' ' && v[i] != '\n' && v[i] != '\t' && v[i] != '\r') {
             a = _tp_min(a,i); b = _tp_max(b,i+1);
         }
     }
     if ((b-a) < 0) { return tp_string(""); }
-    e = tp_string_t(tp,b-a);
-    s = e.string.info->s;
+    r = tp_string_t(tp,b-a);
+    s = r.string.info->s;
     memcpy(s,v+a,b-a);
-    return tp_track(tp,e);
+    return tp_track(tp,r);
 }
 
 tp_obj tp_replace(TP) {

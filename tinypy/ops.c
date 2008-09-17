@@ -58,12 +58,11 @@ tp_obj tp_has(TP,tp_obj self, tp_obj k) {
         if (_tp_dict_find(tp,self.dict.val,k) != -1) { return tp_True; }
         return tp_False;
     } else if (type == TP_STRING && k.type == TP_STRING) {
-        char *p = strstr(TP_CSTR(self),TP_CSTR(k));
-        return tp_number(p != 0);
+        return tp_number(_tp_str_index(self,k)!=-1);
     } else if (type == TP_LIST) {
         return tp_number(_tp_list_find(tp,self.list.val,k)!=-1);
     }
-    tp_raise(tp_None,"tp_has(%s,%s)",TP_CSTR(self),TP_CSTR(k));
+    tp_raise(tp_None,tp_string("(tp_has) TypeError: iterable argument required"));
 }
 
 /* Function: tp_del
@@ -79,7 +78,7 @@ void tp_del(TP,tp_obj self, tp_obj k) {
         _tp_dict_del(tp,self.dict.val,k,"tp_del");
         return;
     }
-    tp_raise(,"tp_del(%s,%s)",TP_CSTR(self),TP_CSTR(k));
+    tp_raise(,tp_string("(tp_del) TypeError: object does not support item deletion"));
 }
 
 
@@ -111,7 +110,7 @@ tp_obj tp_iter(TP,tp_obj self, tp_obj k) {
     if (type == TP_DICT && k.type == TP_NUMBER) {
         return self.dict.val->items[_tp_dict_next(tp,self.dict.val)].key;
     }
-    tp_raise(tp_None,"tp_iter(%s,%s)",TP_CSTR(self),TP_CSTR(k));
+    tp_raise(tp_None,tp_string("(tp_iter) TypeError: iteration over non-sequence"));
 }
 
 
@@ -140,17 +139,17 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
             n = (n<0?l+n:n);
             return _tp_list_get(tp,self.list.val,n,"tp_get");
         } else if (k.type == TP_STRING) {
-            if (strcmp("append",TP_CSTR(k)) == 0) {
+            if (tp_cmp(tp,tp_string("append"),k) == 0) {
                 return tp_method(tp,self,tp_append);
-            } else if (strcmp("pop",TP_CSTR(k)) == 0) {
+            } else if (tp_cmp(tp,tp_string("pop"),k) == 0) {
                 return tp_method(tp,self,tp_pop);
-            } else if (strcmp("index",TP_CSTR(k)) == 0) {
+            } else if (tp_cmp(tp,tp_string("index"),k) == 0) {
                 return tp_method(tp,self,tp_index);
-            } else if (strcmp("sort",TP_CSTR(k)) == 0) {
+            } else if (tp_cmp(tp,tp_string("sort"),k) == 0) {
                 return tp_method(tp,self,tp_sort);
-            } else if (strcmp("extend",TP_CSTR(k)) == 0) {
+            } else if (tp_cmp(tp,tp_string("extend"),k) == 0) {
                 return tp_method(tp,self,tp_extend);
-            } else if (strcmp("*",TP_CSTR(k)) == 0) {
+            } else if (tp_cmp(tp,tp_string("*"),k) == 0) {
                 tp_params_v(tp,1,self);
                 r = tp_copy(tp);
                 self.list.val->len=0;
@@ -166,15 +165,15 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
             n = (n<0?l+n:n);
             if (n >= 0 && n < l) { return tp_string_n(tp->chars[(unsigned char)self.string.val[n]],1); }
         } else if (k.type == TP_STRING) {
-            if (strcmp("join",TP_CSTR(k)) == 0) {
+            if (tp_cmp(tp,tp_string("join"),k) == 0) {
                 return tp_method(tp,self,tp_join);
-            } else if (strcmp("split",TP_CSTR(k)) == 0) {
+            } else if (tp_cmp(tp,tp_string("split"),k) == 0) {
                 return tp_method(tp,self,tp_split);
-            } else if (strcmp("index",TP_CSTR(k)) == 0) {
+            } else if (tp_cmp(tp,tp_string("index"),k) == 0) {
                 return tp_method(tp,self,tp_str_index);
-            } else if (strcmp("strip",TP_CSTR(k)) == 0) {
+            } else if (tp_cmp(tp,tp_string("strip"),k) == 0) {
                 return tp_method(tp,self,tp_strip);
-            } else if (strcmp("replace",TP_CSTR(k)) == 0) {
+            } else if (tp_cmp(tp,tp_string("replace"),k) == 0) {
                 return tp_method(tp,self,tp_replace);
             }
         }
@@ -187,25 +186,24 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
         tmp = tp_get(tp,k,tp_number(0));
         if (tmp.type == TP_NUMBER) { a = tmp.number.val; }
         else if(tmp.type == TP_NONE) { a = 0; }
-        else { tp_raise(tp_None,"%s is not a number",TP_CSTR(tmp)); }
+        else { tp_raise(tp_None,tp_string("(tp_get) TypeError: indices must be numbers")); }
         tmp = tp_get(tp,k,tp_number(1));
         if (tmp.type == TP_NUMBER) { b = tmp.number.val; }
         else if(tmp.type == TP_NONE) { b = l; }
-        else { tp_raise(tp_None,"%s is not a number",TP_CSTR(tmp)); }
+        else { tp_raise(tp_None,tp_string("(tp_get) TypeError: indices must be numbers")); }
         a = _tp_max(0,(a<0?l+a:a)); b = _tp_min(l,(b<0?l+b:b));
         if (type == TP_LIST) {
             return tp_list_n(tp,b-a,&self.list.val->items[a]);
         } else if (type == TP_STRING) {
-            tp_obj r = tp_string_t(tp,b-a);
+/*            tp_obj r = tp_string_t(tp,b-a);
             char *ptr = r.string.info->s;
             memcpy(ptr,self.string.val+a,b-a); ptr[b-a]=0;
-            return tp_track(tp,r);
+            return tp_track(tp,r);*/
+            return tp_string_slice(tp,self,a,b);
         }
     }
 
-
-
-    tp_raise(tp_None,"tp_get(%s,%s)",TP_CSTR(self),TP_CSTR(k));
+    tp_raise(tp_None,tp_string("(tp_get) TypeError: ?"));
 }
 
 /* Function: tp_iget
@@ -252,13 +250,13 @@ void tp_set(TP,tp_obj self, tp_obj k, tp_obj v) {
             _tp_list_append(tp,self.list.val,v);
             return;
         } else if (k.type == TP_STRING) {
-            if (strcmp("*",TP_CSTR(k)) == 0) {
+            if (tp_cmp(tp,tp_string("*"),k) == 0) {
                 tp_params_v(tp,2,self,v); tp_extend(tp);
                 return;
             }
         }
     }
-    tp_raise(,"tp_set(%s,%s,%s)",TP_CSTR(self),TP_CSTR(k),TP_CSTR(v));
+    tp_raise(,tp_string("(tp_set) TypeError: object does not support item assignment"));
 }
 
 tp_obj tp_add(TP,tp_obj a, tp_obj b) {
@@ -278,13 +276,17 @@ tp_obj tp_add(TP,tp_obj a, tp_obj b) {
         tp_extend(tp);
         return r;
     }
-    tp_raise(tp_None,"tp_add(%s,%s)",TP_CSTR(a),TP_CSTR(b));
+    tp_raise(tp_None,tp_string("(tp_add) TypeError: ?"));
 }
 
 tp_obj tp_mul(TP,tp_obj a, tp_obj b) {
     if (a.type == TP_NUMBER && a.type == b.type) {
         return tp_number(a.number.val*b.number.val);
-    } else if (a.type == TP_STRING && b.type == TP_NUMBER) {
+    } else if ((a.type == TP_STRING && b.type == TP_NUMBER) || 
+               (a.type == TP_NUMBER && b.type == TP_STRING)) {
+        if(a.type == TP_NUMBER) {
+            tp_obj c = a; a = b; b = c;
+        }
         int al = a.string.len; int n = b.number.val;
         if(n <= 0) {
             tp_obj r = tp_string_t(tp,0);
@@ -295,7 +297,7 @@ tp_obj tp_mul(TP,tp_obj a, tp_obj b) {
         int i; for (i=0; i<n; i++) { memcpy(s+al*i,a.string.val,al); }
         return tp_track(tp,r);
     }
-    tp_raise(tp_None,"tp_mul(%s,%s)",TP_CSTR(a),TP_CSTR(b));
+    tp_raise(tp_None,tp_string("(tp_mul) TypeError: ?"));
 }
 
 /* Function: tp_len
@@ -312,7 +314,8 @@ tp_obj tp_len(TP,tp_obj self) {
     } else if (type == TP_LIST) {
         return tp_number(self.list.val->len);
     }
-    tp_raise(tp_None,"tp_len(%s)",TP_CSTR(self));
+    
+    tp_raise(tp_None,tp_string("(tp_len) TypeError: len() of unsized object"));
 }
 
 int tp_cmp(TP,tp_obj a, tp_obj b) {
@@ -321,8 +324,11 @@ int tp_cmp(TP,tp_obj a, tp_obj b) {
         case TP_NONE: return 0;
         case TP_NUMBER: return _tp_sign(a.number.val-b.number.val);
         case TP_STRING: {
-            int v = memcmp(a.string.val,b.string.val,_tp_min(a.string.len,b.string.len));
-            if (v == 0) { v = a.string.len-b.string.len; }
+            int l = _tp_min(a.string.len,b.string.len);
+            int v = memcmp(a.string.val,b.string.val,l);
+            if (v == 0) {
+                v = a.string.len-b.string.len;
+            }
             return v;
         }
         case TP_LIST: {
@@ -336,7 +342,7 @@ int tp_cmp(TP,tp_obj a, tp_obj b) {
         case TP_FNC: return a.fnc.info - b.fnc.info;
         case TP_DATA: return (char*)a.data.val - (char*)b.data.val;
     }
-    tp_raise(0,"tp_cmp(%s,%s)",TP_CSTR(a),TP_CSTR(b));
+    tp_raise(0,tp_string("(tp_cmp) TypeError: ?"));
 }
 
 #define TP_OP(name,expr) \
@@ -345,7 +351,7 @@ int tp_cmp(TP,tp_obj a, tp_obj b) {
         tp_num a = _a.number.val; tp_num b = _b.number.val; \
         return tp_number(expr); \
     } \
-    tp_raise(tp_None,"%s(%s,%s)",#name,TP_CSTR(_a),TP_CSTR(_b)); \
+    tp_raise(tp_None,tp_string("(" #name ") TypeError: unsupported operand type(s)")); \
 }
 
 TP_OP(tp_and,((long)a)&((long)b));
