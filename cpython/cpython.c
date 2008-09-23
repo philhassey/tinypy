@@ -48,7 +48,7 @@ Tinypy_init(TinypyObject *self, PyObject *args, PyObject *kwds)
     unsigned long mem = 16*1024*1024;    /* 16 megabytes default */
     static char *kwlist[] = { "time", "mem", 0 };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|dl",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|dk",
         kwlist, &time, &mem)) {
         return -1;
     }
