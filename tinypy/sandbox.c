@@ -1,4 +1,4 @@
-void tp_sandbox(TP, double time_limit, size_t mem_limit) {
+void tp_sandbox(TP, double time_limit, unsigned long mem_limit) {
     tp->time_limit = time_limit;
     tp->mem_limit = mem_limit;
 }
@@ -23,35 +23,35 @@ void tp_time_update(TP) {
     }
 }
 
-void *tp_malloc(TP, size_t bytes) {
-    size_t *ptr = (size_t *) calloc(bytes + sizeof(size_t), 1);
+void *tp_malloc(TP, unsigned long bytes) {
+    unsigned long *ptr = (unsigned long *) calloc(bytes + sizeof(unsigned long), 1);
     if(ptr) {
         *ptr = bytes;
-        tp->mem_used += bytes + sizeof(size_t);
+        tp->mem_used += bytes + sizeof(unsigned long);
     }
     tp_mem_update(tp);
     return ptr+1;
 }
 
 void tp_free(TP, void *ptr) {
-    size_t *temp = (size_t *) ptr;
+    unsigned long *temp = (unsigned long *) ptr;
     if(temp) {
         --temp;
-        tp->mem_used -= (*temp + sizeof(size_t));
+        tp->mem_used -= (*temp + sizeof(unsigned long));
         free(temp);
     }
     tp_mem_update(tp);
 }
 
-void *tp_realloc(TP, void *ptr, size_t bytes) {
-    size_t *temp = (size_t *) ptr;
+void *tp_realloc(TP, void *ptr, unsigned long bytes) {
+    unsigned long *temp = (unsigned long *) ptr;
     int diff;
     if(temp && bytes) {
         --temp;
         diff = bytes - *temp;
         *temp = bytes;
         tp->mem_used += diff;
-        temp = (size_t *) realloc(temp, bytes+sizeof(size_t));
+        temp = (unsigned long *) realloc(temp, bytes+sizeof(unsigned long));
         return temp+1;
     }
     else if(temp && !bytes) {

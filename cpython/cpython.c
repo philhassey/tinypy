@@ -45,7 +45,7 @@ Tinypy_init(TinypyObject *self, PyObject *args, PyObject *kwds)
 {
     self->vm = tp_init(0, NULL);
     double time = 5*1000;       /* 5 seconds default */
-    long mem = 16*1024*1024;    /* 16 megabytes default */
+    unsigned long mem = 16*1024*1024;    /* 16 megabytes default */
     static char *kwlist[] = { "time", "mem", 0 };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|dl",

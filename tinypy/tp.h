@@ -223,8 +223,8 @@ typedef struct tp_vm {
     clock_t clocks;
     double time_elapsed;
     double time_limit;
-    size_t mem_limit;
-    size_t mem_used;
+    unsigned long mem_limit;
+    unsigned long mem_used;
     int mem_exceeded;
 } tp_vm;
 
@@ -239,10 +239,10 @@ typedef struct _tp_data {
 
 extern tp_obj tp_None;
 
-void *tp_malloc(TP, size_t);
-void *tp_realloc(TP, void *, size_t);
+void *tp_malloc(TP, unsigned long);
+void *tp_realloc(TP, void *, unsigned long);
 void tp_free(TP, void *);
-void tp_sandbox(TP, double, size_t);
+void tp_sandbox(TP, double, unsigned long);
 void tp_time_update(TP);
 void tp_mem_update(TP);
 
