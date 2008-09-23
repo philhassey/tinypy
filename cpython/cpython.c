@@ -61,7 +61,7 @@ static void
 Tinypy_destruct(PyObject *self)
 {
     tp_deinit(((TinypyObject *) self)->vm);
-    PyMem_Del(self);
+    self->ob_type->tp_free(self);
 }
 
 static PyObject *
