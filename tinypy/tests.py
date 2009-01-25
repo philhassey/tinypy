@@ -8,12 +8,12 @@ import disasm
 ################################################################################
 RM = 'rm -f '
 VM = './vm '
-TINYPY = '../build/tinypy '
+TINYPY = './tinypy '
 TMP = 'tmp.txt'
 if '-mingw32' in ARGV or "-win" in ARGV:
     RM = 'del '
     VM = 'vm '
-    TINYPY = '..\\build\\tinypy '
+    TINYPY = '..\\tinypy '
     TMP = 'tmp.txt'
     #TMP = 'stdout.txt'
 def system_rm(fname):
