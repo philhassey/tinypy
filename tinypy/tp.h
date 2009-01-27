@@ -239,9 +239,16 @@ typedef struct _tp_data {
 
 extern tp_obj tp_None;
 
+#ifdef TP_SANDBOX
 void *tp_malloc(TP, unsigned long);
 void *tp_realloc(TP, void *, unsigned long);
 void tp_free(TP, void *);
+#else
+#define tp_malloc(TP,x) calloc((x),1)
+#define tp_realloc(TP,x,y) realloc(x,y)
+#define tp_free(TP,x) free(x)
+#endif
+
 void tp_sandbox(TP, double, unsigned long);
 void tp_time_update(TP);
 void tp_mem_update(TP);

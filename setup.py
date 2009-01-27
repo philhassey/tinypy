@@ -8,6 +8,7 @@ CLEAN = False
 BOOT = False
 DEBUG = False
 VALGRIND = False
+SANDBOX = False
 CORE = ['tokenize','parse','encode','py2bc']
 MODULES = []
 
@@ -17,12 +18,13 @@ def main():
         print HELP
         return
     
-    global TEST,CLEAN,BOOT,DEBUG,VALGRIND
+    global TEST,CLEAN,BOOT,DEBUG,VALGRIND,SANDBOX
     TEST = 'test' in sys.argv
     CLEAN = 'clean' in sys.argv
     BOOT = 'boot' in sys.argv
     DEBUG = 'debug' in sys.argv
     VALGRIND = 'valgrind' in sys.argv
+    SANDBOX = 'sandbox' in sys.argv
     CLEAN = CLEAN or BOOT
     TEST = TEST or BOOT
         
@@ -86,6 +88,7 @@ Options:
     debug - build with debug options on
     valgrind - run tests through valgrind
     -cCOMPILER - build for a specific platform (-cmingw32, -clinux, -cmsvc, -cunix)
+    sandbox - enable sandbox
 
 Modules:
     math - build math module
@@ -125,6 +128,10 @@ def vars_linux():
     
     if 'pygame' in MODULES:
         VARS['$FLAGS'] += ' `sdl-config --cflags --libs` '
+
+    if SANDBOX:
+        VARS['$SYS'] += " -sandbox "
+        VARS['$FLAGS'] += " -DTP_SANDBOX "
 
 def vars_windows():
     VARS['$RM'] = 'del'

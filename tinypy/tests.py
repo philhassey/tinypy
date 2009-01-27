@@ -16,6 +16,7 @@ if '-mingw32' in ARGV or "-win" in ARGV:
     TINYPY = '..\\tinypy '
     TMP = 'tmp.txt'
     #TMP = 'stdout.txt'
+SANDBOX = '-sandbox' in ARGV
 def system_rm(fname):
     system(RM+fname)
 
@@ -1027,14 +1028,16 @@ print(y)
 ""","OK")
 
     #test that sandbox() raises an exception when the time limit is passed
-    t_render("""
+    if SANDBOX:
+        t_render("""
 sandbox(1, False)
 while True: 
     pass
 """, "SandboxError", False)
 
     #test that calling sandbox() removes the sandbox builtin
-    t_render("""
+    if SANDBOX:
+        t_render("""
 sandbox(500, False)
 try:
     sandbox(200)
@@ -1043,7 +1046,8 @@ except:
 """, "OK")
 
     #test that sandbox() raises an exception when the memory limit is passed
-    t_render("""
+    if SANDBOX:
+        t_render("""
 sandbox(False, 1)
 a = 42
 """, "SandboxError", False)
@@ -1378,7 +1382,8 @@ EOF 0 0 0
 """, "foo");
 
     #test that function definitions longer than the bytecode are properly sanitized
-    t_asm("""
+    if SANDBOX:
+        t_asm("""
 DEF 0 0 100
 REGS 2 0 0
 STRING 1 0 3 "foo"
@@ -1388,19 +1393,22 @@ EOF 0 0 0
 """, "SandboxError", False)
 
     #test that negative out of bounds jumps are sanitized
-    t_asm("""
+    if SANDBOX:
+        t_asm("""
 JUMP 0 127 255
 EOF 0 0 0
 """, "SandboxError", False)
     
     #test that positive out of bounds jumps are sanitized
-    t_asm("""
+    if SANDBOX:
+        t_asm("""
 JUMP 0 128 0
 EOF 0 0 0
 """, "SandboxError", False)
 
     #test that strings with boundaries beyond the end of the bytecode are properly sanitized
-    t_asm("""
+    if SANDBOX:
+        t_asm("""
 STRING 1 0 100 "foobar"
 EOF 0 0 0
 """, "SandboxError", False,False)

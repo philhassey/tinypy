@@ -226,20 +226,15 @@ enum {
 #define GA tp_grey(tp,RA)
 #define SR(v) f->cur = cur; return(v);
 
-void tp_bounds(TP, tp_code *cur, int n) {
-    char *s = (char *)(cur + n);
-    tp_obj code = tp->frames[tp->cur].code;
-    if (s < code.string.val || s > (code.string.val+code.string.len)) {
-        tp_raise(,tp_string("(tp_bounds) SandboxError: bytecode bounds reached"));
-    }
-}
 
 int tp_step(TP) {
     tp_frame_ *f = &tp->frames[tp->cur];
     tp_obj *regs = f->regs;
     tp_code *cur = f->cur;
     while(1) {
+    #ifdef TP_SANDBOX
     tp_bounds(tp,cur,1);
+    #endif
     tp_code e = *cur;
     /*
      fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur-f->codes,tp_strings[e.i],VA,VB,VC);
@@ -270,7 +265,9 @@ int tp_step(TP) {
             if (RC.number.val < tp_len(tp,RB).number.val) {
                 RA = tp_iter(tp,RB,RC); GA;
                 RC.number.val += 1;
+                #ifdef TP_SANDBOX
                 tp_bounds(tp,cur,1);
+                #endif
                 cur += 1;
             }
             break;
@@ -280,12 +277,16 @@ int tp_step(TP) {
         case TP_IDEL: tp_del(tp,RA,RB); break;
         case TP_IMOVE: RA = RB; break;
         case TP_INUMBER:
+            #ifdef TP_SANDBOX
             tp_bounds(tp,cur,sizeof(tp_num)/4);
+            #endif
             RA = tp_number(*(tp_num*)(*++cur).string.val);
             cur += sizeof(tp_num)/4;
             continue;
         case TP_ISTRING: {
+            #ifdef TP_SANDBOX
             tp_bounds(tp,cur,(UVBC/4)+1);
+            #endif
             /* RA = tp_string_n((*(cur+1)).string.val,UVBC); */
             int a = (*(cur+1)).string.val-f->code.string.val;
             RA = tp_string_sub(tp,f->code,a,a+UVBC),
@@ -299,7 +300,9 @@ int tp_step(TP) {
         case TP_IJUMP: cur += SVBC; continue; break;
         case TP_ISETJMP: f->jmp = SVBC?cur+SVBC:0; break;
         case TP_ICALL:
+            #ifdef TP_SANDBOX
             tp_bounds(tp,cur,1);
+            #endif
             f->cur = cur + 1;  RA = tp_call(tp,RB,RC); GA;
             return 0; break;
         case TP_IGGET:
@@ -310,7 +313,9 @@ int tp_step(TP) {
         case TP_IGSET: tp_set(tp,f->globals,RA,RB); break;
         case TP_IDEF: {
 /*            RA = tp_def(tp,(*(cur+1)).string.val,f->globals);*/
+            #ifdef TP_SANDBOX
             tp_bounds(tp,cur,SVBC);
+            #endif
             int a = (*(cur+1)).string.val-f->code.string.val;
             RA = tp_def(tp,
                 /*tp_string_n((*(cur+1)).string.val,(SVBC-1)*4),*/
@@ -327,7 +332,10 @@ int tp_step(TP) {
             break;
         case TP_INONE: RA = tp_None; break;
         case TP_ILINE:
+            #ifdef TP_SANDBOX
             tp_bounds(tp,cur,VA);
+            #endif
+            ;
             int a = (*(cur+1)).string.val-f->code.string.val;
 /*            f->line = tp_string_n((*(cur+1)).string.val,VA*4-1);*/
             f->line = tp_string_sub(tp,f->code,a,a+VA*4-1);
@@ -341,9 +349,11 @@ int tp_step(TP) {
             tp_raise(0,tp_string("(tp_step) RuntimeError: invalid instruction"));
             break;
     }
+    #ifdef TP_SANDBOX
     tp_time_update(tp);
     tp_mem_update(tp);
     tp_bounds(tp,cur,1);
+    #endif
     cur += 1;
     }
     SR(0);
@@ -447,7 +457,10 @@ void tp_builtins(TP) {
     {"int",tp_int}, {"exec",tp_exec_}, {"exists",tp_exists},
     {"mtime",tp_mtime}, {"number",tp_float}, {"round",tp_round},
     {"ord",tp_ord}, {"merge",tp_merge}, {"getraw",tp_getraw},
-    {"setmeta",tp_setmeta}, {"getmeta",tp_getmeta}, {"sandbox",tp_sandbox_},
+    {"setmeta",tp_setmeta}, {"getmeta",tp_getmeta},
+    #ifdef TP_SANDBOX
+    {"sandbox",tp_sandbox_},
+    #endif
     {0,0},
     };
     int i; for(i=0; b[i].s; i++) {

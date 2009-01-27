@@ -1,16 +1,22 @@
+
 void tp_sandbox(TP, double time_limit, unsigned long mem_limit) {
     tp->time_limit = time_limit;
     tp->mem_limit = mem_limit;
 }
 
 void tp_mem_update(TP) {
+/*    static long maxmem = 0;
+    if (tp->mem_used > maxmem) {
+        maxmem = tp->mem_used; 
+        fprintf(stderr,"%ld k\n",tp->mem_used/1024);
+    }*/
     if((!tp->mem_exceeded) &&
        (tp->mem_used > tp->mem_limit) && 
        (tp->mem_limit != TP_NO_LIMIT)) {
         tp->mem_exceeded = 1;
         tp_raise(,tp_string("(tp_mem_update) SandboxError: memory limit exceeded"));
     }
-}
+} 
 
 void tp_time_update(TP) {
     clock_t tmp = tp->clocks;
@@ -63,5 +69,26 @@ void *tp_realloc(TP, void *ptr, unsigned long bytes) {
     }
     else {
         return NULL;
+    }
+}
+
+
+tp_obj tp_sandbox_(TP) {
+    tp_num time = TP_NUM();
+    tp_num mem = TP_NUM();
+    tp_sandbox(tp, time, mem);
+    tp_del(tp, tp->builtins, tp_string("sandbox"));
+    tp_del(tp, tp->builtins, tp_string("mtime"));
+    tp_del(tp, tp->builtins, tp_string("load"));
+    tp_del(tp, tp->builtins, tp_string("save"));
+    tp_del(tp, tp->builtins, tp_string("system"));
+    return tp_None;
+}
+
+void tp_bounds(TP, tp_code *cur, int n) {
+    char *s = (char *)(cur + n);
+    tp_obj code = tp->frames[tp->cur].code;
+    if (s < code.string.val || s > (code.string.val+code.string.len)) {
+        tp_raise(,tp_string("(tp_bounds) SandboxError: bytecode bounds reached"));
     }
 }

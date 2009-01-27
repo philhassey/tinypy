@@ -312,15 +312,3 @@ tp_obj tp_class(TP) {
     klass.dict.val->meta = tp_get(tp,tp->builtins,tp_string("object")); 
     return klass;
 }
-
-tp_obj tp_sandbox_(TP) {
-    tp_num time = TP_NUM();
-    tp_num mem = TP_NUM();
-    tp_sandbox(tp, time, mem);
-    tp_del(tp, tp->builtins, tp_string("sandbox"));
-    tp_del(tp, tp->builtins, tp_string("mtime"));
-    tp_del(tp, tp->builtins, tp_string("load"));
-    tp_del(tp, tp->builtins, tp_string("save"));
-    tp_del(tp, tp->builtins, tp_string("system"));
-    return tp_None;
-}
