@@ -1090,6 +1090,13 @@ def foo():
     v = "ERROR"
 """)
 
+    #test for segfault on large split
+    t_render("""
+x = " ".join([str(n) for n in range(0,50000)])
+y = x.split("1")
+print("OK")
+""","OK")
+
 ################################################################################
 
 def t_boot(ss,ex,exact=True):

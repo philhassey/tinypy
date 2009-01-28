@@ -128,12 +128,10 @@ tp_obj tp_split(TP) {
 
     int i;
     while ((i=_tp_str_index(v,d))!=-1) {
-        _tp_list_append(tp,r.list.val,tp_string_slice(tp,v,0,i));
+        _tp_list_append(tp,r.list.val,tp_string_sub(tp,v,0,i));
         v.string.val += i + d.string.len; v.string.len -= i + d.string.len;
-/*         tp_grey(tp,r); // should stop gc or something instead*/
     }
-    _tp_list_append(tp,r.list.val,tp_string_slice(tp,v,0,v.string.len));
-/*     tp_grey(tp,r); // should stop gc or something instead*/
+    _tp_list_append(tp,r.list.val,tp_string_sub(tp,v,0,v.string.len));
     return r;
 }
 
