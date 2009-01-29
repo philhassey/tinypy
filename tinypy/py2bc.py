@@ -53,3 +53,10 @@ def main(src,dest):
 
 if __name__ == '__main__':
     main(ARGV[1],ARGV[2])
+    main(ARGV[1],ARGV[2])
+    main(ARGV[1],ARGV[2])
+    main(ARGV[1],ARGV[2])
+    main(ARGV[1],ARGV[2])
+    main(ARGV[1],ARGV[2])
+    main(ARGV[1],ARGV[2])
+    main(ARGV[1],ARGV[2])

@@ -52,7 +52,6 @@ void tp_reset(TP) {
 
 void tp_gc_init(TP) {
     tp->white = _tp_list_new(tp);
-    tp->strings = _tp_dict_new(tp);
     tp->grey = _tp_list_new(tp);
     tp->black = _tp_list_new(tp);
     tp->steps = 0;
@@ -60,7 +59,6 @@ void tp_gc_init(TP) {
 
 void tp_gc_deinit(TP) {
     _tp_list_free(tp, tp->white);
-    _tp_dict_free(tp, tp->strings);
     _tp_list_free(tp, tp->grey);
     _tp_list_free(tp, tp->black);
 }
@@ -94,15 +92,6 @@ void tp_collect(TP) {
     for (n=0; n<tp->white->len; n++) {
         tp_obj r = tp->white->items[n];
         if (*r.gci.data) { continue; }
-        if (r.type == TP_STRING) {
-            /*this can't be moved into tp_delete, because tp_delete is
-               also used by tp_track_s to delete redundant strings*/
-            /* these two lines of codes ensure that we remove
-               the original string which was placed in the cache */
-            r.string.len = r.string.info->len;
-            r.string.val = r.string.info->s;
-            _tp_dict_del(tp,tp->strings,r,"tp_collect");
-        }
         tp_delete(tp,r);
     }
     tp->white->len = 0;
@@ -130,7 +119,7 @@ void tp_full(TP) {
 void tp_gcinc(TP) {
     tp->steps += 1;
     if (tp->steps < TP_GCMAX || tp->grey->len > 0) {
-        _tp_gcinc(tp); _tp_gcinc(tp);
+        _tp_gcinc(tp); _tp_gcinc(tp); 
     }
     if (tp->steps < TP_GCMAX || tp->grey->len > 0) { return; }
     tp->steps = 0;
@@ -139,16 +128,6 @@ void tp_gcinc(TP) {
 }
 
 tp_obj tp_track(TP,tp_obj v) {
-    if (v.type == TP_STRING) {
-        int i = _tp_dict_find(tp,tp->strings,v);
-        if (i != -1) {
-            tp_delete(tp,v);
-            v = tp->strings->items[i].key;
-            tp_grey(tp,v);
-            return v;
-        }
-        _tp_dict_setx(tp,tp->strings,v,tp_True);
-    }
     tp_gcinc(tp);
     tp_grey(tp,v);
     return v;

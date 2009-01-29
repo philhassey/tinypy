@@ -217,7 +217,6 @@ typedef struct tp_vm {
     _tp_list *white;
     _tp_list *grey;
     _tp_list *black;
-    _tp_dict *strings;
     int steps;
     /* sandbox */
     clock_t clocks;

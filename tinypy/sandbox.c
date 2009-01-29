@@ -6,9 +6,9 @@ void tp_sandbox(TP, double time_limit, unsigned long mem_limit) {
 
 void tp_mem_update(TP) {
 /*    static long maxmem = 0;
-    if (tp->mem_used > maxmem) {
-        maxmem = tp->mem_used; 
-        fprintf(stderr,"%ld k\n",tp->mem_used/1024);
+    if (tp->mem_used/1024 > maxmem) {
+        maxmem = tp->mem_used/1024; 
+        fprintf(stderr,"%ld k\n",maxmem);
     }*/
     if((!tp->mem_exceeded) &&
        (tp->mem_used > tp->mem_limit) && 

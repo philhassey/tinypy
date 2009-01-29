@@ -90,37 +90,6 @@ tp_obj tp_join(TP) {
     return tp_track(tp,r);
 }
 
-/* Function: tp_string_slice
- * Create a new string sliced from an existing string.
- * 
- * Unlike <tp_string> and <tp_string_n>, a copy of the actual string is made,
- * and storage for the new string will always be managed by tinypy, no matter
- * what kind of string you pass.
- * 
- * Example:
- * > tp_obj foo(void)
- * > {
- * >     char test[4] = "foo";
- * >     return tp_string_slice(tp_string(test), 0, 3);
- * > }
- * 
- * This will work correctly, even though the variable "test" will go out of
- * scope when the function returns, because tp_string_splice makes its own
- * copy of the string.
- * 
- * Parameters:
- * s - The string to create a substring of.
- * a - Index of the first character to include in the slice.
- * b - Index of the first character not to include.
- * 
- * Returns:
- * A new string object corresponding to s[a:b] in actual tinypy code.
- */
-tp_obj tp_string_slice(TP,tp_obj s, int a, int b) {
-    tp_obj r = tp_string_copy(tp,s.string.val+a,b-a);
-    return r;
-}
-
 tp_obj tp_split(TP) {
     tp_obj v = TP_OBJ();
     tp_obj d = TP_OBJ();
