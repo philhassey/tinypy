@@ -350,9 +350,9 @@ int tp_cmp(TP,tp_obj a, tp_obj b) {
     tp_raise(tp_None,tp_string("(" #name ") TypeError: unsupported operand type(s)")); \
 }
 
-TP_OP(tp_and,((long)a)&((long)b));
-TP_OP(tp_or,((long)a)|((long)b));
-TP_OP(tp_xor,((long)a)^((long)b));
+TP_OP(tp_bitwise_and,((long)a)&((long)b));
+TP_OP(tp_bitwise_or,((long)a)|((long)b));
+TP_OP(tp_bitwise_xor,((long)a)^((long)b));
 TP_OP(tp_mod,((long)a)%((long)b));
 TP_OP(tp_lsh,((long)a)<<((long)b));
 TP_OP(tp_rsh,((long)a)>>((long)b));
@@ -360,5 +360,11 @@ TP_OP(tp_sub,a-b);
 TP_OP(tp_div,a/b);
 TP_OP(tp_pow,pow(a,b));
 
+tp_obj tp_bitwise_not(TP, tp_obj a) {
+    if (a.type == TP_NUMBER) {
+        return tp_number(~(long)a.number.val);
+    }
+    tp_raise(tp_None,tp_string("(tp_bitwise_not) TypeError: unsupported operand type"));
+}
 
 /**/

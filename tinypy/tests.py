@@ -1097,6 +1097,39 @@ y = x.split("1")
 print("OK")
 ""","OK")
 
+    #test for Issue 42: 'not' operator only works for numbers, 
+    #not dicts, lists, or strings
+    #Reported by kiwidrew, Apr 08, 2009
+    #see also: http://code.google.com/p/tinypy/issues/detail?id=42
+    t_render("""
+if not None:
+    print('OK')
+""", "OK")
+
+    t_render("""
+n = 0
+if not n:
+    print('OK')
+""","OK")
+
+    t_render("""
+d = {}
+if not d:
+    print('OK')
+""","OK")
+
+    t_render("""
+l = []
+if not l:
+    print('OK')
+""","OK")
+
+    t_render("""
+s = ''
+if not s:
+    print('OK')
+""","OK")
+
 ################################################################################
 
 def t_boot(ss,ex,exact=True):
@@ -1109,9 +1142,10 @@ def t_boot(ss,ex,exact=True):
         save(fname,s)
         n += 1
     system_rm('tmp.txt')
-    system(TINYPY+fname+' > tmp.txt')
+    #system(TINYPY+fname+' > tmp.txt')
+    system("../build/tinypy "+fname+' > tmp.txt')
     res = load(TMP).strip()
-    #print(ss,ex,res)
+    print(ss,ex,res)
     if exact: assert(res == ex)
     else: assert(ex in res)
 

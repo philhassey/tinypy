@@ -3,7 +3,7 @@ from tokenize import Token
 if not "tinypy" in sys.version:
     from boot import *
 
-EOF,ADD,SUB,MUL,DIV,POW,AND,OR,CMP,GET,SET,NUMBER,STRING,GGET,GSET,MOVE,DEF,PASS,JUMP,CALL,RETURN,IF,DEBUG,EQ,LE,LT,DICT,LIST,NONE,LEN,POS,PARAMS,IGET,FILE,NAME,NE,HAS,RAISE,SETJMP,MOD,LSH,RSH,ITER,DEL,REGS,XOR = 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45
+EOF,ADD,SUB,MUL,DIV,POW,BITAND,BITOR,CMP,GET,SET,NUMBER,STRING,GGET,GSET,MOVE,DEF,PASS,JUMP,CALL,RETURN,IF,DEBUG,EQ,LE,LT,DICT,LIST,NONE,LEN,POS,PARAMS,IGET,FILE,NAME,NE,HAS,RAISE,SETJMP,MOD,LSH,RSH,ITER,DEL,REGS,BITXOR,IFN,NOT,BITNOT = 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48
 
 class DState:
     def __init__(self,code,fname):
@@ -187,6 +187,12 @@ def imanage(orig,fnc):
     t = Token(orig.pos,'symbol','=',[items[0],orig])
     return fnc(t)
 
+def unary(i,tb,r=None):
+    r = get_tmp(r)
+    b = do(tb)
+    code(i,r,b)
+    if r != b: free_tmp(b)
+    return r
 def infix(i,tb,tc,r=None):
     r = get_tmp(r)
     b,c = do(tb,r),do(tc)
@@ -194,23 +200,17 @@ def infix(i,tb,tc,r=None):
     if r != b: free_tmp(b)
     free_tmp(c)
     return r
-def ss_infix(ss,i,tb,tc,_r=None):
-    r2 = get_tmp()
-    ss = _do_number(ss)
-    t = get_tag()
-    r = do(tb,_r)
+def logic_infix(op, tb, tc, _r=None):
+    t = get_tag() 
+    r = do(tb, _r)
     if _r != r: free_tmp(_r) #REG
-    code(EQ,r2,r,ss)
-    code(IF,r2)
-    jump(t,'else')
-    jump(t,'end')
-    tag(t,'else')
+    if op == 'and':   code(IF, r)
+    elif op == 'or':  code(IFN, r)
+    jump(t, 'end')
     _r = r
-    r = do(tc,_r)
+    r = do(tc, _r)
     if _r != r: free_tmp(_r) #REG
-    tag(t,'end')
-    free_tmp(r2) #REG
-    free_tmp(ss) #REG
+    tag(t, 'end')
     return r
 
 def _do_none(r=None):
@@ -224,9 +224,9 @@ def do_symbol(t,r=None):
     cmps = ['<','>','<=','>=','==','!=']
     metas = {
         '+':ADD,'*':MUL,'/':DIV,'**':POW,
-        '-':SUB,'and':AND,'or':OR,
+        '-':SUB,
         '%':MOD,'>>':RSH,'<<':LSH,
-        '&':AND,'|':OR,'^':XOR
+        '&':BITAND,'|':BITOR,'^':BITXOR,
     }
     if t.val == 'None': return _do_none(r)
     if t.val == 'True':
@@ -236,8 +236,7 @@ def do_symbol(t,r=None):
     items = t.items
 
     if t.val in ['and','or']:
-        ss = int(t.val == 'or')
-        return ss_infix(ss,metas[t.val],items[0],items[1],r)
+        return logic_infix(t.val, items[0], items[1], r)
     if t.val in isets:
         return imanage(t,do_symbol)
     if t.val == 'is':
@@ -245,7 +244,7 @@ def do_symbol(t,r=None):
     if t.val == 'isnot':
         return infix(CMP,items[0],items[1],r)
     if t.val == 'not':
-        return infix(EQ,Token(t.pos,'number',0),items[0],r)
+        return unary(NOT, items[0], r)
     if t.val == 'in':
         return infix(HAS,items[1],items[0],r)
     if t.val == 'notin':

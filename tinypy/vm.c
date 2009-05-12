@@ -199,20 +199,21 @@ void tp_return(TP, tp_obj v) {
 }
 
 enum {
-    TP_IEOF,TP_IADD,TP_ISUB,TP_IMUL,TP_IDIV,TP_IPOW,TP_IAND,TP_IOR,TP_ICMP,TP_IGET,TP_ISET,
+    TP_IEOF,TP_IADD,TP_ISUB,TP_IMUL,TP_IDIV,TP_IPOW,TP_IBITAND,TP_IBITOR,TP_ICMP,TP_IGET,TP_ISET,
     TP_INUMBER,TP_ISTRING,TP_IGGET,TP_IGSET,TP_IMOVE,TP_IDEF,TP_IPASS,TP_IJUMP,TP_ICALL,
     TP_IRETURN,TP_IIF,TP_IDEBUG,TP_IEQ,TP_ILE,TP_ILT,TP_IDICT,TP_ILIST,TP_INONE,TP_ILEN,
     TP_ILINE,TP_IPARAMS,TP_IIGET,TP_IFILE,TP_INAME,TP_INE,TP_IHAS,TP_IRAISE,TP_ISETJMP,
-    TP_IMOD,TP_ILSH,TP_IRSH,TP_IITER,TP_IDEL,TP_IREGS,TP_IXOR,
+    TP_IMOD,TP_ILSH,TP_IRSH,TP_IITER,TP_IDEL,TP_IREGS,TP_IBITXOR, TP_IIFN, 
+    TP_INOT, TP_IBITNOT,
     TP_ITOTAL
 };
 
 /* char *tp_strings[TP_ITOTAL] = {
-       "EOF","ADD","SUB","MUL","DIV","POW","AND","OR","CMP","GET","SET","NUM",
+       "EOF","ADD","SUB","MUL","DIV","POW","BITAND","BITOR","CMP","GET","SET","NUM",
        "STR","GGET","GSET","MOVE","DEF","PASS","JUMP","CALL","RETURN","IF","DEBUG",
        "EQ","LE","LT","DICT","LIST","NONE","LEN","LINE","PARAMS","IGET","FILE",
        "NAME","NE","HAS","RAISE","SETJMP","MOD","LSH","RSH","ITER","DEL","REGS",
-       "XOR"
+       "BITXOR", "IFN", "NOT", "BITNOT",
    };*/
 
 #define VA ((int)e.regs.a)
@@ -237,7 +238,7 @@ int tp_step(TP) {
     #endif
     tp_code e = *cur;
     /*
-     fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur-f->codes,tp_strings[e.i],VA,VB,VC);
+     fprintf(stderr,"%2d.%4d: %-6s %3d %3d %3d\n",tp->cur,cur - (tp_code*)f->code.string.val,tp_strings[e.i],VA,VB,VC);
        int i; for(i=0;i<16;i++) { fprintf(stderr,"%d: %s\n",i,TP_xSTR(regs[i])); }
     */
     switch (e.i) {
@@ -247,9 +248,9 @@ int tp_step(TP) {
         case TP_IMUL: RA = tp_mul(tp,RB,RC); break;
         case TP_IDIV: RA = tp_div(tp,RB,RC); break;
         case TP_IPOW: RA = tp_pow(tp,RB,RC); break;
-        case TP_IAND: RA = tp_and(tp,RB,RC); break;
-        case TP_IOR:  RA = tp_or(tp,RB,RC); break;
-        case TP_IXOR:  RA = tp_xor(tp,RB,RC); break;
+        case TP_IBITAND: RA = tp_bitwise_and(tp,RB,RC); break;
+        case TP_IBITOR:  RA = tp_bitwise_or(tp,RB,RC); break;
+        case TP_IBITXOR:  RA = tp_bitwise_xor(tp,RB,RC); break;
         case TP_IMOD:  RA = tp_mod(tp,RB,RC); break;
         case TP_ILSH:  RA = tp_lsh(tp,RB,RC); break;
         case TP_IRSH:  RA = tp_rsh(tp,RB,RC); break;
@@ -258,8 +259,11 @@ int tp_step(TP) {
         case TP_IEQ: RA = tp_number(tp_cmp(tp,RB,RC)==0); break;
         case TP_ILE: RA = tp_number(tp_cmp(tp,RB,RC)<=0); break;
         case TP_ILT: RA = tp_number(tp_cmp(tp,RB,RC)<0); break;
+        case TP_IBITNOT:  RA = tp_bitwise_not(tp,RB); break;
+        case TP_INOT: RA = tp_number(!tp_bool(tp,RB)); break;
         case TP_IPASS: break;
         case TP_IIF: if (tp_bool(tp,RA)) { cur += 1; } break;
+        case TP_IIFN: if (!tp_bool(tp,RA)) { cur += 1; } break;
         case TP_IGET: RA = tp_get(tp,RB,RC); GA; break;
         case TP_IITER:
             if (RC.number.val < tp_len(tp,RB).number.val) {
@@ -428,8 +432,10 @@ tp_obj tp_import(TP, const char * fname, const char * name, void *codes, int len
 tp_obj tp_exec_(TP) {
     tp_obj code = TP_OBJ();
     tp_obj globals = TP_OBJ();
-    tp_frame(tp,globals,code,0);
-    return tp_None;
+    tp_obj r = tp_None;
+    tp_frame(tp,globals,code,&r);
+    tp_run(tp,tp->cur);
+    return r;
 }
 
 
@@ -458,6 +464,7 @@ void tp_builtins(TP) {
     {"mtime",tp_mtime}, {"number",tp_float}, {"round",tp_round},
     {"ord",tp_ord}, {"merge",tp_merge}, {"getraw",tp_getraw},
     {"setmeta",tp_setmeta}, {"getmeta",tp_getmeta},
+    {"bool", tp_builtins_bool},
     #ifdef TP_SANDBOX
     {"sandbox",tp_sandbox_},
     #endif

@@ -312,3 +312,11 @@ tp_obj tp_class(TP) {
     klass.dict.val->meta = tp_get(tp,tp->builtins,tp_string("object")); 
     return klass;
 }
+
+/* Function: tp_builtins_bool
+ * Coerces any value to a boolean.
+ */
+tp_obj tp_builtins_bool(TP) {
+    tp_obj v = TP_OBJ();
+    return (tp_number(tp_bool(tp, v)));
+}

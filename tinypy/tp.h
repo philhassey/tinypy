@@ -259,6 +259,7 @@ tp_obj tp_has(TP,tp_obj self, tp_obj k);
 tp_obj tp_len(TP,tp_obj);
 void tp_del(TP,tp_obj,tp_obj);
 tp_obj tp_str(TP,tp_obj);
+int tp_bool(TP,tp_obj);
 int tp_cmp(TP,tp_obj,tp_obj);
 void _tp_raise(TP,tp_obj);
 tp_obj tp_printf(TP,char const *fmt,...);
