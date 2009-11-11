@@ -29,6 +29,8 @@ void tp_time_update(TP) {
     }
 }
 
+#ifdef TP_SANDBOX
+
 void *tp_malloc(TP, unsigned long bytes) {
     unsigned long *ptr = (unsigned long *) calloc(bytes + sizeof(unsigned long), 1);
     if(ptr) {
@@ -72,6 +74,7 @@ void *tp_realloc(TP, void *ptr, unsigned long bytes) {
     }
 }
 
+#endif
 
 tp_obj tp_sandbox_(TP) {
     tp_num time = TP_NUM();
